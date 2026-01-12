@@ -444,7 +444,6 @@ namespace DeviceCommunicationBase.DeviceCommunication_Mitsubishi3E
         private TaskCompletionSource<byte[]> mCurrentTcs;
         public override async Task ReadAsync(CancellationToken ct = default)
         {
-
             // 遍历所有已分类和排序的读取块
             foreach (var kvp in mReadList)
             {
@@ -566,27 +565,56 @@ namespace DeviceCommunicationBase.DeviceCommunication_Mitsubishi3E
             }
         }
 
-
+        // 用于生成请求报文
         Mc3EComposerBuilder mBuilder = new Mc3EComposerBuilder();
-        public override Task<DeviceValue> ReadAsync(ICommunicationDataPoint dp, CancellationToken ct = default)
-        {
 
-            //// 4. 触发数据变更事件
-            //// 这里简单遍历所有点位触发，实际优化可以只触发变动的
-            //foreach (var area in mEventMap)
-            //{
-            //    foreach (var addrList in area.Value)
-            //    {
-            //        foreach (var point in addrList.Value)
-            //        {
-            //            // 获取新值
-            //            var newVal = point.GetValue();
-            //            // 触发事件 (这里建议增加新旧值对比，防止无效触发)
-            //            point.GetValChangeDel()?.Invoke(point, newVal);
-            //        }
-            //    }
-            //}
-            throw new NotImplementedException();
+        public override async Task<DeviceValue> ReadAsync(ICommunicationDataPoint dp, CancellationToken ct = default)
+        {
+            //手动读取单个点，不进行自动回调，与数据更新
+
+            Mc3EDataPoint mp = dp as Mc3EDataPoint;
+            McDeviceCode code = mp.DecodeData.Area;
+
+            int startAddr = mp.DecodeData.Address;
+
+            int readLength = mp.GetLength();
+
+            // 1. 构建读取报文
+            byte[] request = mBuilder.BuildRead(code, startAddr, readLength);
+
+            // 2. 发送并等待响应
+            byte[] response = await SendAndWaitAsync(request);
+            ushort successCode = response.ToUInt16(9);
+            if (successCode != 0)//读取失败
+            {
+                throw new Exception($"获取异常代码：{successCode}");
+            }
+            else
+            {
+                // 3. 解析数据并填充到 mValueGroup
+                switch (code)
+                {
+                    case McDeviceCode.M:
+                    case McDeviceCode.X:
+                    case McDeviceCode.Y:
+                    case McDeviceCode.B:
+                        byte[] bv = new byte[response.Length - 11];
+                        Array.Copy(response, 11, bv, 0, bv.Length);
+                        bool[] values = bv.ToHexBoolsUnsafe();
+                        //进行比较,复制，触发变更
+                        ProcessData_Bool(code, (bool[])mValueGroup[code], startAddr, values);
+                        break;
+                    case McDeviceCode.D:
+                    case McDeviceCode.W:
+                    case McDeviceCode.R:
+                        ProcessData_Byte(code, (byte[])mValueGroup[code], startAddr, response, 11);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            return dp.GetValue();
         }
 
         public override void Write(params (ICommunicationDataPoint dp, object value)[] pvs)
@@ -599,9 +627,54 @@ namespace DeviceCommunicationBase.DeviceCommunication_Mitsubishi3E
             throw new NotImplementedException();
         }
 
-        public override Task WriteAsync(params (ICommunicationDataPoint dp, object value)[] pvs)
+        public override async Task WriteAsync(params (ICommunicationDataPoint dp, object value)[] pvs)
         {
-            throw new NotImplementedException();
+            List<(Mc3EDataPoint dp, byte[] data)> wordItems = new List<(Mc3EDataPoint dp, byte[] data)>() ;
+            List<(Mc3EDataPoint dp, byte[] data)> bitItems = new List<(Mc3EDataPoint dp, byte[] data)>();
+            foreach (var dp0 in pvs)
+            {
+                Mc3EDataPoint dp = dp0.dp as Mc3EDataPoint;
+                object value = dp0.value;
+                switch (dp.DataType)
+                {
+                    case DataType.BIT:
+                        bitItems.Add((dp, new byte[] { (bool)(value) ? (byte)1 : (byte)0 }));
+                        break;
+                    case DataType.BYTE:
+                        break;
+                    case DataType.INT16:
+                    case DataType.UINT16:
+                    case DataType.DOUBLE:
+                    case DataType.UTF32:
+                    case DataType.ASCII:
+                        byte[] d = ValueDecoder.Code(value, dp.DataType, (ushort)(dp.GetLength() * 2));
+                        wordItems.Add((dp, d));
+                        break;
+                    default:
+                        break;
+                }
+            }
+            // 1. 构建读取报文
+            byte[] request = mBuilder.BuildWrite(wordItems, bitItems);
+
+            // 2. 发送并等待响应
+            try
+            {
+                byte[] response = await SendAndWaitAsync(request);
+                ushort successCode = response.ToUInt16(9);
+                if (successCode != 0)//读取失败
+                {
+                    throw new Exception($"获取异常代码：{successCode}");
+                }
+            }
+            catch (TimeoutException ex)
+            {
+                // 处理超时
+            }
+            catch (Exception ex)
+            {
+                // 处理其他错误
+            }
         }
 
         public override Task WriteAsync(ICommunicationDataPoint dp, object value)
@@ -611,6 +684,10 @@ namespace DeviceCommunicationBase.DeviceCommunication_Mitsubishi3E
 
         public DeviceValue DecodeValue(Mc3EDataPoint mp)
         {
+            if (!IsChannelRunning)
+            {
+                throw new Exception("自动读取没有开启，无法支持内存解码操作");
+            }
             switch (mp.DecodeData.Area)
             {
                 case McDeviceCode.M:
@@ -696,6 +773,7 @@ namespace DeviceCommunicationBase.DeviceCommunication_Mitsubishi3E
             public byte StationNo { get; set; } = 0x00;
             public byte[] MonitorTimer { get; set; } = { 0x10, 0x00 };//0x0010;
             private byte[] ReadCommd = { 0x01, 0x04 }; // 批量读块
+            private byte[] WriteCommd = { 0x06, 0x14 }; // 随机写入
 
             /// <summary>
             /// 使用 Composer 自动生成读取报文
@@ -737,40 +815,67 @@ namespace DeviceCommunicationBase.DeviceCommunication_Mitsubishi3E
                 return composer.Build();
             }
 
+
             /// <summary>
             /// 使用 Composer 自动生成写入报文
             /// </summary>
-            //public byte[] BuildWrite(McDeviceCode code, int startAddr, byte[] dataToWrite, int points)
-            //{
-            //    bool isBit = IsBitDevice(code);
-            //    ushort subCmd = isBit ? (ushort)0x0001 : (ushort)0x0000;
+            public byte[] BuildWrite(List<(Mc3EDataPoint dp, byte[] data)> wordItems, List<(Mc3EDataPoint dp, byte[] data)> bitItems)
+            {
+                if ((wordItems == null && bitItems == null) || 
+                    (wordItems.Count == 0 && bitItems.Count == 0)) 
+                    return null;
 
-            //    var composer = new FrameComposer();
+                // 检查数量上限 (根据实际PLC型号调整，这里假设一般限制)
+                if (wordItems.Count + bitItems.Count > 192) throw new ArgumentException("随机写入点数过多，最多一次写入192字，请分包处理");
 
-            //    // Header
-            //    composer.Add(new U16LEModule(0x0050))
-            //            .Add(new ByteModule(NetworkNo))
-            //            .Add(new ByteModule(PcNo))
-            //            .Add(new U16LEModule(IoNo))
-            //            .Add(new ByteModule(StationNo));
 
-            //    // Length Calculation
-            //    composer.Add(new LengthModule("BodyStart", "BodyEnd", 2, true));
+                // 1) 构建报文
+                var composer = new FrameComposer();
 
-            //    // Body
-            //    composer.Add(new MarkModule("BodyStart"))
-            //            .Add(new U16LEModule(MonitorTimer))
-            //            .Add(new U16LEModule(0x1401))       // Command (Batch Write)
-            //            .Add(new U16LEModule(subCmd))
-            //            .Add(new U24LEModule(startAddr))
-            //            .Add(new ByteModule((byte)code))
-            //            .Add(new U16LEModule((ushort)points))
-            //            // 写入可变数据
-            //            .Add(new VarBytesModule(() => dataToWrite))
-            //            .Add(new MarkModule("BodyEnd"));
+                // --- Header ---
+                composer.Add(new ConstBytesModule(SubHeader))
+                        .Add(new ConstBytesModule(new byte[] { NetworkNo }))
+                        .Add(new ConstBytesModule(new byte[] { PcNo }))
+                        .Add(new ConstBytesModule(IoNo))
+                        .Add(new ConstBytesModule(new byte[] { StationNo }));
 
-            //    return composer.Build();
-            //}
+                // --- Length ---
+                composer.Add(new LengthModule("DataStart", "DataEnd", 2, true));
+
+                // --- Body ---
+                composer.Add(new MarkModule("DataStart"))
+                        .Add(new ConstBytesModule(MonitorTimer))
+                        .Add(new ConstBytesModule(WriteCommd))                 // 0x1406
+                        .Add(new ConstBytesModule(new byte[] { 0x00, 0x00 }))  // SubCommand (一般为 0x0000)
+
+                        // 块数（按常见实现：1字节）
+                        .Add(new ConstBytesModule(wordItems.Count.ToBytes(2)))           // Word block count
+                        .Add(new ConstBytesModule(bitItems.Count.ToBytes(2)));           // Bit  block count
+
+                // 3) 追加 Word blocks
+                foreach (var it in wordItems)
+                {
+                    composer.Add(new ConstBytesModule(it.dp.DecodeData.Address.ToBytes(3)))           // Address (3 bytes LE)
+                            .Add(new ConstBytesModule(new byte[] { (byte)it.dp.DecodeData.Area })) // Device code(1)
+                            .Add(new ConstBytesModule(it.dp.GetLength().ToBytes(2)))
+                            .Add(new ConstBytesModule(it.data));                     // Data (2)
+                }
+
+                // 4) 追加 Bit blocks
+                foreach (var it in bitItems)
+                {
+                    composer.Add(new ConstBytesModule(it.dp.DecodeData.Address.ToBytes(3)))
+                            .Add(new ConstBytesModule(new byte[] { (byte)it.dp.DecodeData.Area }))
+                            .Add(new ConstBytesModule(it.dp.GetLength().ToBytes(2)))
+                            .Add(new ConstBytesModule(it.data));                     // Data (each bit=1 byte 00/01)
+                }
+
+                composer.Add(new MarkModule("DataEnd"));
+
+                return composer.Build();
+            }
+
+
 
             private bool IsBitDevice(McDeviceCode code)
             {

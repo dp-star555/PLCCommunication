@@ -41,6 +41,6 @@ namespace CommunicationBase
         /// <param name="dataType"></param>
         /// <param name="dataEndian"></param>
         /// <returns></returns>
-        byte[] Code(object value, DataType dataType, ushort length, DataEndianKind dataEndian);
+        byte[] Code(object value, DataType dataType, ushort length, DataEndianKind dataEndian = 0);
     }
 }

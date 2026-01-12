@@ -52,6 +52,42 @@ namespace DeviceCommunicationBase
             return bytes;
         }
 
+        /// <summary>
+        /// 将 int 转为指定字节数的字节数组（支持大小端）
+        /// </summary>
+        /// <param name="value">源整数</param>
+        /// <param name="byteCount">字节数：1 / 2 / 3 / 4</param>
+        /// <param name="endian">字节序是否是小端</param>
+        public static byte[] ToBytes(
+            this ushort value,
+            ushort byteCount,
+            bool isLE = true)
+        {
+            if (byteCount < 1 || byteCount > 2)
+                throw new ArgumentOutOfRangeException(nameof(byteCount), "byteCount must be between 1 and 4.");
+
+            // 范围校验（防止高位被静默截断）
+            int maxValue = (byteCount == 2) ? ushort.MaxValue : (1 << (byteCount * 8)) - 1;
+            if (value < 0 || value > maxValue)
+                throw new ArgumentOutOfRangeException(nameof(value),
+                    $"Value {value} exceeds range for {byteCount} bytes.");
+
+            var bytes = new byte[byteCount];
+
+            if (isLE)
+            {
+                for (int i = 0; i < byteCount; i++)
+                    bytes[i] = (byte)((value >> (8 * i)) & 0xFF);
+            }
+            else
+            {
+                for (int i = 0; i < byteCount; i++)
+                    bytes[byteCount - 1 - i] = (byte)((value >> (8 * i)) & 0xFF);
+            }
+
+            return bytes;
+        }
+
         public static ushort ToUInt16(this byte[] value, int startIndex, bool isLE = true)
         {
             // 1. 边界检查
