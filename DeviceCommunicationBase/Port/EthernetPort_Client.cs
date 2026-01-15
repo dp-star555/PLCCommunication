@@ -122,7 +122,7 @@ namespace DeviceCommunicationBase
         {
             if (IsOpen) return true;
 
-           
+            
             bool startOk = mClient.Connect(RemoteIp, RemotePort);
             if (!startOk)
                 return false;
