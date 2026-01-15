@@ -63,7 +63,7 @@ namespace DeviceCommunicationBase
             ushort byteCount,
             bool isLE = true)
         {
-            if (byteCount < 1 || byteCount > 2)
+            if (byteCount < 1 )
                 throw new ArgumentOutOfRangeException(nameof(byteCount), "byteCount must be between 1 and 4.");
 
             // 范围校验（防止高位被静默截断）

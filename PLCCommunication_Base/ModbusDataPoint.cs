@@ -83,7 +83,7 @@ namespace PLCCommunication_Base
 
         public void SetValue(object val)
         {
-            ((ModbusTCP_Device)mPanel).Write(this, val);
+            ((ModbusTCP_Device)mPanel).WriteAsync(this, val);
         }
 
         public ValueChangedDelegate GetValChangeDel()

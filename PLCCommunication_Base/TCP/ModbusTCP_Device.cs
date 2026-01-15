@@ -547,7 +547,7 @@ namespace DeviceDataCommunication_Modbus
 
         public override void Write(params (ICommunicationDataPoint dp, object value)[] pvs)
         {
-            if (pvs == null || pvs.Length == 0) return;
+            if (pvs == null || pvs.Length == 0) return  ;
             var merged = BuildMergedWriteFragments(pvs);
             foreach (var task in merged)
             {
@@ -563,8 +563,9 @@ namespace DeviceDataCommunication_Modbus
                         master.WriteMultipleRegisters(SlaveID, task.StartAddress, task.RegisterData.ToArray());
                     }
                 }
-                finally { mIOLock.Release(); }  
+                finally{mIOLock.Release(); }  
             }
+
         }
 
         public override void Write(ICommunicationDataPoint dp, object value)
@@ -598,7 +599,7 @@ namespace DeviceDataCommunication_Modbus
 
         public override async Task WriteAsync(params (ICommunicationDataPoint dp, object value)[] pvs)
         {
-            if (pvs == null || pvs.Length == 0) return;
+            if (pvs == null || pvs.Length == 0) return  ;
             var merged = BuildMergedWriteFragments(pvs);
             foreach (var task in merged)
             {

@@ -3,11 +3,14 @@
 #define EPSON
 
 using CommunicationBase;
+using DeviceCommunicationBase;
 using DeviceCommunicationBase.DeviceCommunication_Mitsubishi3E;
 using DeviceDataCommunication_Modbus;
 using DP_Common.FileEX;
+using DryIoc;
 using PLCCommunication_Base;
 using PLCCommunication_Base.INOVANCE ;
+using Prism.Ioc;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -22,6 +25,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
@@ -32,12 +36,15 @@ namespace test
     /// </summary>
     public partial class MainWindow : Window
     {
-        public MainWindow()
+        public MainWindow(IContainerProvider container)
         {
             InitializeComponent();
+            mitsubis3E_Device = container.Resolve<Mitsubis3E_Device>("test_3E");
+
         }
         ModbusTCP_Device deviceCommunication;
-        Mitsubis3E_Device mitsubis3E_Device = new Mitsubis3E_Device();
+        Mitsubis3E_Device mitsubis3E_Device;
+
         private async void button_Click(object sender, RoutedEventArgs e)
         {
 #if Base || EPSON
@@ -281,12 +288,14 @@ namespace test
 
         private void button1复制__C_1复制__C_1_Click(object sender, RoutedEventArgs e)
         {
+
+            mitsubis3E_Device.Config("1");
             mitsubis3E_Device.ConfigValueArray(McDeviceCode.M, 1500);
             mitsubis3E_Device.ConfigValueArray(McDeviceCode.D, 1500);
 
             Mc3EDataPoint mp1 = new Mc3EDataPoint()
             {
-                Name = "测试BOOL",
+                Name = "测试D100",
                 Input = "D100",
                 DataType = DataType.UINT32
             };
@@ -296,7 +305,7 @@ namespace test
             };
             Mc3EDataPoint mp2 = new Mc3EDataPoint()
             {
-                Name = "测试BOOL",
+                Name = "测试D500",
                 Input = "D500",
                 DataType = DataType.INT16
             };
@@ -306,7 +315,7 @@ namespace test
             };
             Mc3EDataPoint mp3 = new Mc3EDataPoint()
             {
-                Name = "测试BOOL",
+                Name = "测试D900",
                 Input = "D900",
                 DataType = DataType.DOUBLE
             };
@@ -332,9 +341,15 @@ namespace test
 
         }
 
-
-        private void button1复制__C_1复制__C_1复制__C__Click(object sender, RoutedEventArgs e)
+        private async void button1复制__C_1复制__C_1复制__C_复制__C__Click(object sender, RoutedEventArgs e)
         {
+            sw.Restart();
+            mitsubis3E_Device.Write(
+                (mitsubis3E_Device["测试D900"], mitsubis3E_Device["测试D900"].GetValue().DOUBLE + 1),
+                (mitsubis3E_Device["测试D500"], mitsubis3E_Device["测试D500"].GetValue().INT16 + 1),
+                (mitsubis3E_Device["测试D100"], mitsubis3E_Device["测试D100"].GetValue().UINT32 + 1)
+                );
+            Console.WriteLine("时间: " + sw.ElapsedMilliseconds);
 
         }
     }
