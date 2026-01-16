@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-namespace PLCCommunication_Base
+namespace PLCCommunication_Base.Modbus
 {
     /// <summary>
     /// 基础Modbus地址转换器，标准的Modbus输入的数据

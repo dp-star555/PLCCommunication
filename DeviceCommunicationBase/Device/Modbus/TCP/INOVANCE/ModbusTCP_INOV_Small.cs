@@ -1,5 +1,4 @@
 ﻿using CommunicationBase;
-using DeviceDataCommunication_Modbus;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -7,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PLCCommunication_Base.INOVANCE
+namespace PLCCommunication_Base.Modbus.INOVANCE
 {
     /// <summary>
     /// 支持汇川小型plc-H5U,Easy的通讯交互

@@ -56,7 +56,11 @@
   <ItemGroup>
     <Compile Include="CommunicationDataPoint.cs" />
     <Compile Include="CsvHelper.cs" />
-    <Compile Include="DeviceCommunication_Mitsubishi3E\Mitsubis3E.cs" />
+    <Compile Include="Device\Mitsubishi\Mitsubis3E.cs" />
+    <Compile Include="Device\Modbus\ModbusAddressConverter_General.cs" />
+    <Compile Include="Device\Modbus\ModbusDataPoint.cs" />
+    <Compile Include="Device\Modbus\TCP\INOVANCE\ModbusTCP_INOV_Small.cs" />
+    <Compile Include="Device\Modbus\TCP\ModbusTCP_Device.cs" />
     <Compile Include="FrameBuilder\IFrameBuilder.cs" />
     <Compile Include="FrameSplitter\DelimiterFrameSplitter .cs" />
     <Compile Include="FrameSplitter\IFrameSplitter.cs" />
@@ -65,6 +69,7 @@
     <Compile Include="ICommunication.cs" />
     <Compile Include="AddressConverter\IAddressConverter.cs" />
     <Compile Include="PhysicalCommunication\INetworkCommunication.cs" />
+    <Compile Include="Port\CommPortManager.cs" />
     <Compile Include="Port\EthernetPort_Client.cs" />
     <Compile Include="Port\ICommPort.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -75,6 +80,9 @@
   <ItemGroup>
     <PackageReference Include="HPSocket.Net">
       <Version>6.0.7</Version>
+    </PackageReference>
+    <PackageReference Include="NModbus">
+      <Version>3.0.81</Version>
     </PackageReference>
     <PackageReference Include="Prism.DryIoc">
       <Version>8.1.97</Version>

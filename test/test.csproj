@@ -161,10 +161,6 @@
       <Project>{D710157F-4C0A-412E-BB01-9AA47F8BEAA4}</Project>
       <Name>CommunicationBase</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PLCCommunication_Base\DeviceDataCommunication_Modbus.csproj">
-      <Project>{9b37d07f-4702-406e-9353-53f7dbf23e41}</Project>
-      <Name>DeviceDataCommunication_Modbus</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

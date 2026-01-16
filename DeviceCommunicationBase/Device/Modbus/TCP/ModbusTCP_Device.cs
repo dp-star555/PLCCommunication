@@ -1,24 +1,17 @@
 ﻿using CommunicationBase;
 using NModbus;
-using NModbus.Device;
-using PLCCommunication_Base;
+using PLCCommunication_Base.Modbus;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Messaging;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DeviceDataCommunication_Modbus
+namespace PLCCommunication_Base.Modbus
 {
     /// <summary>
     /// Modbus设备,这里pc设备只做主站使用，只考虑了主站的情况

@@ -63,10 +63,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="TCP\INOVANCE\ModbusTCP_INOV_Small.cs" />
     <Compile Include="ModbusAddressConverter_General.cs" />
     <Compile Include="ModbusDataPoint.cs" />
-    <Compile Include="TCP\ModbusTCP_Device.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
