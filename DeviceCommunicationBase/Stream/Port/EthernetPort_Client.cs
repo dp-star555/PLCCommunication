@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace DeviceCommunicationBase
+namespace DeviceCommunicationBase.Stream
 {
     /// <summary>
     /// 简单的 TCP 网口实现

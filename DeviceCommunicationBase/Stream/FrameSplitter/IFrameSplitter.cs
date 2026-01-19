@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace DeviceCommunicationBase
+namespace DeviceCommunicationBase.Stream
 {
     /// <summary>
     /// 从连续字节流中拆分出完整帧的通用接口

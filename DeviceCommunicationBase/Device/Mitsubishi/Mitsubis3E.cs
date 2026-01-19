@@ -1,5 +1,6 @@
 ﻿using CommunicationBase;
-using DeviceCommunicationBase.FrameSplitter;
+using DeviceCommunicationBase;
+using DeviceCommunicationBase.Stream;
 using HPSocket;
 using Prism.Ioc;
 using System;
@@ -12,9 +13,9 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using static DeviceCommunicationBase.DeviceCommunication_Mitsubishi3E.Mc3EBinaryPacketBuilder;
+using static PLCCommunication_Base.Mitsubishi3E.Mc3EBinaryPacketBuilder;
 
-namespace DeviceCommunicationBase.DeviceCommunication_Mitsubishi3E
+namespace PLCCommunication_Base.Mitsubishi3E
 {
     /// <summary>
     /// MC 设备码（3E Binary）

@@ -1,12 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms.VisualStyles;
 
-namespace DeviceCommunicationBase
+namespace DeviceCommunicationBase.Stream
 {
     /// <summary>
     /// 物理端口类型：网口 / 串口 / 其他

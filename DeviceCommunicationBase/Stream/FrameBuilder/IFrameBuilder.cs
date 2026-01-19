@@ -1,12 +1,7 @@
-﻿using DeviceCommunicationBase;
-using System;
-using System.Buffers.Binary;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace DeviceCommunicationBase
+namespace DeviceCommunicationBase.Stream
 {
     /// <summary>构建上下文：输出缓冲 + Mark 定位点</summary>
     public sealed class FrameBuildContext
@@ -201,53 +196,6 @@ namespace DeviceCommunicationBase
             ctx.Patch(mPatchPos, bytes);
         }
     }
-
-    /// <summary>
-    /// 写入 24-bit 无符号整数（Little-Endian），占 3 字节：
-    /// b0 = v[7:0], b1 = v[15:8], b2 = v[23:16]
-    /// 适用于 MC 3E 协议的 Address 字段（3 bytes LE）。
-    /// </summary>
-    public sealed class U24LEModule : IFrameModule
-    {
-        private readonly uint _value;
-
-        /// <summary>
-        /// 使用 int 构造（会检查范围）。
-        /// </summary>
-        public U24LEModule(int value)
-        {
-            if (value < 0 || value > 0x00FF_FFFF)
-                throw new ArgumentOutOfRangeException(nameof(value), "U24 value must be in range [0, 0x00FFFFFF].");
-            _value = (uint)value;
-        }
-
-        /// <summary>
-        /// 使用 uint 构造（会检查范围）。
-        /// </summary>
-        public U24LEModule(uint value)
-        {
-            if (value > 0x00FF_FFFF)
-                throw new ArgumentOutOfRangeException(nameof(value), "U24 value must be in range [0, 0x00FFFFFF].");
-            _value = value;
-        }
-
-        public int Length => 3;
-
-        public void Emit(FrameBuildContext ctx)
-        {
-            // Little-Endian 3 bytes
-            ctx.WriteByte((byte)(_value & 0xFF));
-            ctx.WriteByte((byte)((_value >> 8) & 0xFF));
-            ctx.WriteByte((byte)((_value >> 16) & 0xFF));
-        }
-
-        public void Fixup(FrameBuildContext ctx)
-        {
-        }
-    }
-
-
-
 
     /// <summary>
     /// 用于校验的类型

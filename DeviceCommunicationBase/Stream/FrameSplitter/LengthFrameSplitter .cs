@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DeviceCommunicationBase
+namespace DeviceCommunicationBase.Stream
 {
     /// <summary>
     /// 长度字段分包器：

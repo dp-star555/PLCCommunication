@@ -3,8 +3,10 @@
 #define EPSON
 
 using CommunicationBase;
-using DeviceCommunicationBase.DeviceCommunication_Mitsubishi3E;
+using DeviceCommunicationBase;
+using DeviceCommunicationBase.Stream;
 using DryIoc;
+using PLCCommunication_Base.Mitsubishi3E;
 using PLCCommunication_Base.Modbus;
 using Prism.Ioc;
 using System;
@@ -22,8 +24,13 @@ namespace test
         {
             InitializeComponent();
             mitsubis3E_Device = container.Resolve<Mitsubis3E_Device>("test_3E");
+            commPortManager = container.Resolve<CommPortManager>();
+            commPortManager.AddPort("1", new HPSocketPort_Client() { });
+
 
         }
+
+        CommPortManager commPortManager;
         ModbusTCP_Device deviceCommunication;
         Mitsubis3E_Device mitsubis3E_Device;
 

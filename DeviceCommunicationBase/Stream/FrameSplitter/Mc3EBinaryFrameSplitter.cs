@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DeviceCommunicationBase.FrameSplitter
+namespace DeviceCommunicationBase.Stream
 {
     /// <summary>
     /// MC 3E Binary 拆包器：

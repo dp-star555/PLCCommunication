@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DeviceCommunicationBase.Port
+namespace DeviceCommunicationBase.Stream
 {
-    internal class CommPortManager
+    public class CommPortManager
     {
         private readonly ConcurrentDictionary<string, ICommPort> mPorts = new ConcurrentDictionary<string, ICommPort>();
 

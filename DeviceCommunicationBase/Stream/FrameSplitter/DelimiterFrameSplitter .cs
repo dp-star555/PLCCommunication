@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DeviceCommunicationBase
+namespace DeviceCommunicationBase.Stream
 {
     /// <summary>
     /// 按指定“结束符”拆分帧，例如 0x0D 0x0A 或任意自定义字节序列
