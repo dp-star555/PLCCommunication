@@ -609,7 +609,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
             return dp.GetValue();
         }
 
-        public override void Write(params (ICommunicationDataPoint dp, object value)[] pvs)
+        public override async void Write(params (ICommunicationDataPoint dp, object value)[] pvs)
         {
             // 1. 数据准备 (逻辑与 Async 版本完全共用，为了 DRY 原则，建议封装数据准备逻辑)
             List<(Mc3EDataPoint dp, byte[] data)> wordItems = new List<(Mc3EDataPoint dp, byte[] data)>();
@@ -645,8 +645,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
             // 2. 构建报文
             byte[] request = mBuilder.BuildWrite(wordItems, bitItems);
 
-            // 3. 发送并等待
-            byte[] response = SendAndWait(request); // 这里直接阻塞，没有 Task，没有死锁
+            byte[] response = await mClient.WriteRequestAsync(request); // 这里直接阻塞，没有 Task，没有死锁
 
             // 4. 校验结果
             ushort successCode = response.ToUInt16(9);
@@ -816,7 +815,8 @@ namespace PLCCommunication_Base.Mitsubishi3E
                 mCurrentTcs = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 // 3. 发送数据
-                if (!mClient.Write(request))
+                bool ack = await mClient.WriteOnlyAsync(request);
+                if (!ack)
                 {
                     throw new Exception("Send data failed.");
                 }
@@ -850,7 +850,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
         /// <summary>
         /// 发送并阻塞等待
         /// </summary>
-        private byte[] SendAndWait(byte[] request, int timeoutMs = 3000)
+        private async Task<byte[]> SendAndWait(byte[] request, int timeoutMs = 3000)
         {
             // 1. 获取锁 (使用同步 Wait，防止多线程并发写入错乱)
             mLock.Wait();
@@ -863,7 +863,8 @@ namespace PLCCommunication_Base.Mitsubishi3E
                 mSyncWaitHandle.Reset();    // 重置信号量
 
                 // 3. 发送数据
-                if (!mClient.Write(request))
+                bool ack = await mClient.WriteOnlyAsync(request);
+                if (!ack)
                 {
                     throw new Exception("Socket 发送失败");
                 }
@@ -931,7 +932,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
                 composer.Add(new LengthModule("DataStart", "DataEnd", 2, true));    //Length
 
                 // --- 3. 数据体 (Command Body) ---
-                composer.Add(new MarkModule("DataStart"))                           // <--- 长度计算起点
+                composer.Add(new MarkModule( MarkType.Length,"DataStart"))                           // <--- 长度计算起点
 
                         .Add(new ConstBytesModule(MonitorTimer))                    // Timer
                         .Add(new ConstBytesModule(ReadCommd))                       // Command (Batch Read)
@@ -940,7 +941,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
                         .Add(new ConstBytesModule(new byte[] { (byte)code }))       // Device Code
                         .Add(new ConstBytesModule(points.ToBytes(2)))               // Points
 
-                        .Add(new MarkModule("DataEnd"));                            // <--- 长度计算终点
+                        .Add(new MarkModule(MarkType.Length, "DataEnd"));                            // <--- 长度计算终点
 
                 // --- 4. 生成 ---
                 return composer.Build();
@@ -973,7 +974,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
                 composer.Add(new LengthModule("DataStart", "DataEnd", 2, true));
 
                 // --- Body ---
-                composer.Add(new MarkModule("DataStart"))
+                composer.Add(new MarkModule(MarkType.Length, "DataStart"))
                         .Add(new ConstBytesModule(MonitorTimer))
                         .Add(new ConstBytesModule(WriteCommd))                 // 0x1406
                         .Add(new ConstBytesModule(new byte[] { 0x00, 0x00 })) // SubCommand (一般为 0x0000)
@@ -994,7 +995,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
                     AddBlockToComposer(composer, it.dp, it.data);
                 }
 
-                composer.Add(new MarkModule("DataEnd"));
+                composer.Add(new MarkModule(MarkType.Length, "DataEnd"));
 
                 return composer.Build();
             }

@@ -6,6 +6,7 @@ using HPSocket.Tcp;
 using System;
 using System.Collections.Concurrent;
 using System.Net;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -34,14 +35,16 @@ namespace DeviceCommunicationBase.Stream
             RemotePort = port;
         }
 
-        // 接收缓冲
-        private readonly ConcurrentQueue<byte[]> mFrameQueue = new ConcurrentQueue<byte[]>();
-        private readonly AutoResetEvent mFrameArrived = new AutoResetEvent(false);
         private readonly TcpClient mClient = null;
 
-        private volatile bool mReadEnabled = false;
+        // 保证一次只发一个指令，防止串包
+        private readonly SemaphoreSlim mSendLock = new SemaphoreSlim(1, 1);
+        //  异步,将收到的数据“路由”回 WriteRequestAsync 的等待处
+        private volatile TaskCompletionSource<byte[]> mCurrentRequestTcs;
+
         string mRemoteIp = "127.0.0.1";
         ushort mRemotePort = 502;
+
         IFrameSplitter mFrameSplitter = DelimiterFrameSplitter.FromString("\r\n");  
 
         public event Action<ICommPort, ReadOnlyMemory<byte>> OnDataReceived;
@@ -97,17 +100,18 @@ namespace DeviceCommunicationBase.Stream
         /// </summary>
         private void OnFrameCompleted(ReadOnlyMemory<byte> frame)
         {
-            if (mReadEnabled)//同步读取
+            if (frame.Length == 0) return;
+            // 路由
+            if (mCurrentRequestTcs != null && !mCurrentRequestTcs.Task.IsCompleted)
             {
-                // 入队（供同步 Read 使用）
-                mFrameQueue.Enqueue(frame.ToArray());
-                // 通知 Read 有新帧到达
-                mFrameArrived.Set();
-                mReadEnabled = false;
+                // WriteRequestAsync 正在等回复 -> 填坑，唤醒 await
+                mCurrentRequestTcs.TrySetResult(frame.ToArray());
             }
-
-            // 抛给外部事件
-            OnDataReceived?.Invoke(this, frame);
+            else
+            {
+                // 抛给外部事件
+                OnDataReceived?.Invoke(this, frame);
+            }
         }
 
         public void Disconnect()
@@ -145,64 +149,69 @@ namespace DeviceCommunicationBase.Stream
             return Connect();
         }
 
-        public int Read(Span<byte> buffer, int timeoutMs = 1000)
+        public async Task<byte[]> WriteRequestAsync(byte[] buffer, int timeoutMs = 1000)
         {
             if (!IsOpen && !Connect())
-                return 0;
-            while (mFrameQueue.TryDequeue(out _)) { }
-            int deadline = Environment.TickCount + timeoutMs;
-            mReadEnabled = true;
-            mFrameArrived.Reset();
+                return null;
+            // 加锁：防止多线程同时发送指令导致数据错乱
+            await mSendLock.WaitAsync();
+
             try
             {
-                while (Environment.TickCount < deadline)
+                //创建一个 TCS 等待结果
+                // RunContinuationsAsynchronously 确保后续代码不在 socket 回调线程执行，防止死锁
+                mCurrentRequestTcs = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                // 发送数据
+                if (!mClient.Send(buffer, buffer.Length)) return null;
+
+                //  等待 TCS 被 SetResult (或者超时)
+                var timeoutTask = Task.Delay(timeoutMs);
+                var completedTask = await Task.WhenAny(mCurrentRequestTcs.Task, timeoutTask);
+
+                if (completedTask == timeoutTask)
                 {
-                    if (mFrameQueue.TryDequeue(out var frame))
-                    {
-                        int bl = buffer.Length;
-                        int fl = frame.Length;
-                        if (bl < fl)
-                        {
-                            throw new Exception($"{Name}中当前空间大小{bl} < 结果大小{fl}");
-                        }
-                        new ReadOnlySpan<byte>(frame, 0, fl).CopyTo(buffer);
-                        return fl; // 返回实际拷贝的字节数
-                    }
-
-                    int remain = deadline - Environment.TickCount;
-                    if (remain <= 0)
-                        break;
-
-                    mFrameArrived.WaitOne(Math.Min(remain, 50));
+                    mCurrentRequestTcs.TrySetCanceled(); // 超时后作废
+                    return null; // 超时返回 null
                 }
+
+                return await mCurrentRequestTcs.Task; // 返回收到的数据
+            }
+            catch
+            {
+                return null;
             }
             finally
-            { 
-                mReadEnabled = false;
-                while (mFrameQueue.TryDequeue(out _)) { }
-                mFrameArrived.Reset();
+            {
+                // E. 清理现场
+                mCurrentRequestTcs = null;
+                mSendLock.Release();
             }
-            return 0; // 超时无帧
         }
 
-        public bool Write(ReadOnlySpan<byte> buffer)
+        public async Task<bool> WriteOnlyAsync(byte[] buffer)
         {
             if (!IsOpen && !Connect())
                 return false;
-
-            var data = buffer.ToArray();
-            bool ok = mClient.Send(data, data.Length);
-            if (!ok)
+            await mSendLock.WaitAsync();
+            try
             {
-                return false;
+                bool ok = mClient.Send(buffer, buffer.Length);
+                if (!ok)
+                {
+                    return false;
+                }
+                return true;
             }
-            return true;
+            finally 
+            {
+                mSendLock.Release();
+            }
         }
 
         public void Dispose()
         {
             Disconnect();
-            mFrameArrived.Dispose();
         }
     }
 }

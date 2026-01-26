@@ -155,7 +155,20 @@ namespace DeviceCommunicationBase
             return result;
         }
 
+        public static int FindBytes(this byte[] src, byte[] pattern, int start = 0,int dataCount = -1)
+        {
+            //边界检查
+            if (src == null || pattern == null || pattern.Length == 0) return -1;
+            if (dataCount < pattern.Length) return -1; // 有效数据还没特征码长，肯定找不到
 
+            // 创建切片 (Span)
+            ReadOnlySpan<byte> searchSpace = dataCount < 0 ? src.AsSpan(start): src.AsSpan(start, dataCount);
+            ReadOnlySpan<byte> target = pattern.AsSpan();
+
+            int relativeIndex = searchSpace.IndexOf(target);
+            // 转换回绝对索引
+            return relativeIndex == -1 ? -1 : start + relativeIndex;
+        }
 
     }
     public static class CommonUnilty

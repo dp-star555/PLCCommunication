@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace DeviceCommunicationBase.Stream
 {
@@ -57,15 +58,14 @@ namespace DeviceCommunicationBase.Stream
         void Disconnect();
 
         /// <summary>
-        /// 写入数据
+        /// 写入数据,只发送，不等待结果
         /// </summary>
-        bool Write(ReadOnlySpan<byte> buffer);
+        Task<bool> WriteOnlyAsync(byte[] buffer);
 
         /// <summary>
-        /// 读取数据
-        /// 返回实际读取字节数，0 表示超时或失败
+        /// 写入数据,等待结果
         /// </summary>
-        int Read(Span<byte> buffer, int timeoutMs = 1000);
+        Task<byte[]> WriteRequestAsync(byte[] buffer, int timeoutMs = 1000);
 
         /// <summary>
         /// 原始数据回调（收到任何数据时触发）
