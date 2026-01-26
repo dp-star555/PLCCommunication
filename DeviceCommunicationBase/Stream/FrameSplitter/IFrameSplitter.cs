@@ -92,16 +92,16 @@ namespace DeviceCommunicationBase.Stream
                     int totalLen = ctx.Position; // 这就是一帧的总长
 
                     // 4. 【数据分割】
-                    byte[] frame = mBuffer.GetRange(0, totalLen).ToArray();
-                    mBuffer.RemoveRange(0, totalLen); // 从缓冲移除
+                    //byte[] frame = mBuffer.GetRange(0, totalLen).ToArray();
+                    //mBuffer.RemoveRange(0, totalLen); // 从缓冲移除
 
                     // 5. 抛出整包 (后续再由 Parser 做 Decode)
-                    FrameCompleted?.Invoke(frame);
+                    //FrameCompleted?.Invoke(frame);
                 }
                 catch (ProtocolMismatchException)
                 {
                     // 遇见 Const 不匹配 -> 说明开头是垃圾 -> 滑动窗口
-                    mBuffer.RemoveAt(0);
+                   // mBuffer.RemoveAt(0);
                     continue;
                 }
                 catch (DataNotEnoughException)
@@ -222,46 +222,46 @@ namespace DeviceCommunicationBase.Stream
         {
             // 相对于 mBuffer[0] 的位置
             int cursor = 0;
-            while (cursor < mWrite)
-            {
-                // 计算当前剩余的有效数据长度
-                // 总有效量 - 当前游标 = 剩余待处理量
-                int remainingLen = mWrite - cursor;
+            //while (cursor < mWrite)
+            //{
+            //    // 计算当前剩余的有效数据长度
+            //    // 总有效量 - 当前游标 = 剩余待处理量
+            //    int remainingLen = mWrite - cursor;
 
-                int anchorIdx = mBuffer.FindBytes(mPivot,cursor, remainingLen);
+            //    int anchorIdx = mBuffer.FindBytes(mPivot,cursor, remainingLen);
 
-                // 1. 快速定位主锚点
-                int anchorIdx = mBuffer.FindBytes(mPivot);
-                if (anchorIdx < 0) { /* Wait logic... */ break; }
+            //    // 1. 快速定位主锚点
+            //    int anchorIdx = mBuffer.FindBytes(mPivot);
+            //    if (anchorIdx < 0) { /* Wait logic... */ break; }
 
-                // 2. 倒推帧头
-                int frameStart = anchorIdx - mPivotOffset;
-                if (frameStart < 0)
-                {
-                    mBuffer.RemoveRange(0, anchorIndex + 1); // 错位了，滑动
-                    continue;
-                }
+            //    // 2. 倒推帧头
+            //    int frameStart = anchorIdx - mPivotOffset;
+            //    if (frameStart < 0)
+            //    {
+            //        mBuffer.RemoveRange(0, anchorIndex + 1); // 错位了，滑动
+            //        continue;
+            //    }
 
-                // 3. 走地图校验
-                var result = VerifyFrame(frameStart);
+            //    // 3. 走地图校验
+            //    var result = VerifyFrame(frameStart);
 
-                if (result.IsMatch)
-                {
-                    // 切包...
-                    byte[] frame = _buffer.GetRange(frameStart, result.TotalLength).ToArray();
-                    _buffer.RemoveRange(0, frameStart + result.TotalLength);
-                    // OnFrame(frame);
-                }
-                else if (result.IsWaiting)
-                {
-                    break; // 数据不够
-                }
-                else
-                {
-                    // 校验失败，滑动窗口
-                    _buffer.RemoveRange(0, anchorIndex + 1);
-                }
-            }
+            //    if (result.IsMatch)
+            //    {
+            //        // 切包...
+            //        byte[] frame = _buffer.GetRange(frameStart, result.TotalLength).ToArray();
+            //        _buffer.RemoveRange(0, frameStart + result.TotalLength);
+            //        // OnFrame(frame);
+            //    }
+            //    else if (result.IsWaiting)
+            //    {
+            //        break; // 数据不够
+            //    }
+            //    else
+            //    {
+            //        // 校验失败，滑动窗口
+            //        _buffer.RemoveRange(0, anchorIndex + 1);
+            //    }
+            //}
         }
     }
 }

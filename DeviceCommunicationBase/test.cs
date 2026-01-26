@@ -235,7 +235,7 @@ namespace DeviceCommunicationBase
 
         public static unsafe List<int> ArrayCompare_Ptr(ReadOnlySpan<byte> b1, ReadOnlySpan<byte> b2)
         {
-            if (b1 == null || b2 == null)
+            if (b1.Length == 0 || b2.Length == 0)
             {
                 throw new Exception("输入的两个数组不能为空。");
             }

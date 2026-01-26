@@ -142,27 +142,15 @@ namespace PLCCommunication_Base.Mitsubishi3E
             mSplitter.FrameCompleted += frame =>
             {
                 byte[] data = frame.ToArray();
-                // A. 检查是否是同步请求
-                if (mIsSyncMode)
+                if (mCurrentTcs == null)
+                    return;                 // 没人在等：迟到包/残留包 -> 丢弃
+                                            // B. 优先检查是否是异步请求
+                if (mCurrentTcs != null && !mCurrentTcs.Task.IsCompleted)
                 {
-                    // 同步模式：
-                    // 1. 存数据
-                    mSyncReceivedData = data;
-                    // 2.唤醒阻塞的线程
-                    mSyncWaitHandle.Set();
+                    // 异步模式：设置 Task 结果，让 await 继续运行
+                    mCurrentTcs.TrySetResult(data);
                 }
-                else
-                {
-                    if (mCurrentTcs == null)
-                        return;                 // 没人在等：迟到包/残留包 -> 丢弃
-                    // B. 优先检查是否是异步请求
-                    if (mCurrentTcs != null && !mCurrentTcs.Task.IsCompleted)
-                    {
-                        // 异步模式：设置 Task 结果，让 await 继续运行
-                        mCurrentTcs.TrySetResult(data);
-                    }
 
-                }
             };
 
         }
@@ -180,18 +168,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
         /// 用于交互的端口
         /// </summary>
         ICommPort mClient;
-        /// <summary>
-        /// 同步信号量 
-        /// </summary>
-        private readonly ManualResetEventSlim mSyncWaitHandle = new ManualResetEventSlim(false);
-        /// <summary>
-        /// 同步模式下的数据暂存区
-        /// </summary>
-        private byte[] mSyncReceivedData = null;
-        /// <summary>
-        /// 标记当前是否处于同步请求模式
-        /// </summary>
-        private volatile bool mIsSyncMode = false;
+
         /// <summary>
         /// 用于端口的自动解包器
         /// </summary>
@@ -264,7 +241,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
         public void Config(string url) 
         {
             string name="1";
-            mClient= containerProvider.Resolve<ICommPort>(name);
+            mClient= containerProvider.Resolve<CommPortManager>().GetPort(name);
 
             mClient.FrameSplitter = mSplitter;
             mClient.OnDisconnect += (sender) =>
@@ -517,7 +494,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
                     // 2. 发送并等待响应
                     try
                     {
-                        byte[] response = await SendAndWaitAsync(request);
+                        byte[] response = await mClient.WriteRequestAsync(request);// SendAndWaitAsync(request);
                         ushort successCode = response.ToUInt16(9);
                         if (successCode != 0)//读取失败
                         {
@@ -575,7 +552,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
             byte[] request = mBuilder.BuildRead(code, startAddr, readLength);
 
             // 2. 发送并等待响应
-            byte[] response = await SendAndWaitAsync(request);
+            byte[] response = await mClient.WriteRequestAsync(request);//SendAndWaitAsync(request);
             ushort successCode = response.ToUInt16(9);
             if (successCode != 0)//读取失败
             {
@@ -694,7 +671,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
             byte[] request = mBuilder.BuildWrite(wordItems, bitItems);
 
             // 2. 发送并等待响应
-            byte[] response = await SendAndWaitAsync(request);
+            byte[] response = await mClient.WriteRequestAsync(request);//SendAndWaitAsync(request);
             ushort successCode = response.ToUInt16(9);
             if (successCode != 0)//读取失败
             {
@@ -797,97 +774,6 @@ namespace PLCCommunication_Base.Mitsubishi3E
             }
         }
 
-        /// <summary>
-        /// 发送数据并异步等待回复
-        /// </summary>
-        /// <param name="request">请求报文</param>
-        /// <param name="timeoutMs">超时时间(毫秒)</param>
-        /// <returns>回复报文</returns>
-        private async Task<byte[]> SendAndWaitAsync(byte[] request, int timeoutMs = 3000)
-        {
-            // 1. 进入锁 (异步等待锁，不阻塞线程)
-            await mLock.WaitAsync();
-
-            try
-            {
-                // 2. 初始化 TCS
-                // RunContinuationsAsynchronously 强制后续代码在线程池运行，防止阻塞 HPSocket 的回调线程
-                mCurrentTcs = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-                // 3. 发送数据
-                bool ack = await mClient.WriteOnlyAsync(request);
-                if (!ack)
-                {
-                    throw new Exception("Send data failed.");
-                }
-
-                // 4. 等待结果 OR 超时
-                // 创建一个超时任务
-                Task timeoutTask = Task.Delay(timeoutMs);
-
-                // 等待 TCS 完成 或者 超时任务 完成 (看谁先完成)
-                Task completedTask = await Task.WhenAny(mCurrentTcs.Task, timeoutTask);
-
-                // 5. 判断结果
-                if (completedTask == timeoutTask)
-                {
-                    // 如果是超时任务先完成，说明超时了
-                    mCurrentTcs.TrySetCanceled(); // 取消 TCS
-                    throw new TimeoutException($"Request timed out after {timeoutMs}ms");
-                }
-
-                // 如果是 TCS 先完成，获取结果
-                return await mCurrentTcs.Task;
-            }
-            finally
-            {
-                // 6. 清理现场并释放锁 (非常重要，否则下次请求会死锁)
-                mCurrentTcs = null;
-                mLock.Release();
-            }
-        }
-
-        /// <summary>
-        /// 发送并阻塞等待
-        /// </summary>
-        private async Task<byte[]> SendAndWait(byte[] request, int timeoutMs = 3000)
-        {
-            // 1. 获取锁 (使用同步 Wait，防止多线程并发写入错乱)
-            mLock.Wait();
-
-            try
-            {
-                // 2. 准备
-                mIsSyncMode = true;         // 标记为同步模式
-                mSyncReceivedData = null;   // 清空旧数据
-                mSyncWaitHandle.Reset();    // 重置信号量
-
-                // 3. 发送数据
-                bool ack = await mClient.WriteOnlyAsync(request);
-                if (!ack)
-                {
-                    throw new Exception("Socket 发送失败");
-                }
-
-                // 4. 挂起当前线程，等待信号量
-                // 这行代码会卡住，直到 FrameCompleted 调用了 mSyncWaitHandle.Set() 或者超时
-                bool isReceived = mSyncWaitHandle.Wait(timeoutMs);
-
-                if (!isReceived)
-                {
-                    throw new TimeoutException($"通信超时 ({timeoutMs}ms)");
-                }
-
-                // 5. 取走数据
-                return mSyncReceivedData;
-            }
-            finally
-            {
-                // 6. 清理
-                mIsSyncMode = false;
-                mLock.Release(); // 释放锁
-            }
-        }
     }
 
     /// <summary>
