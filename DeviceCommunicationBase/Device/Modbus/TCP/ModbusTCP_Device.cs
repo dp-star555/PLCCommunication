@@ -759,15 +759,9 @@ namespace PLCCommunication_Base.Modbus
             switch (mp.DecodeData.Area)
             {
                 case ModbusArea.Coil:
-                    return new DeviceValue()
-                    {
-                        BOOL = mCoils[mp.DecodeData.Address]
-                    };
+                    return mCoils[mp.DecodeData.Address];
                 case ModbusArea.DiscreteInput:
-                    return new DeviceValue()
-                    {
-                        BOOL = mDiscreteInputs[mp.DecodeData.Address]
-                    };
+                    return mDiscreteInputs[mp.DecodeData.Address];
                 case ModbusArea.HoldingRegister:
                     var targetRegisters = mHoldingRegisters.AsSpan(mp.DecodeData.Address, mp.GetLength());
                     ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(targetRegisters);

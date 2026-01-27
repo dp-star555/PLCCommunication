@@ -209,19 +209,19 @@ namespace test
 
             md.OnValueChanged += (val) =>
             {
-                Console.WriteLine($"{val.BOOL}");
+                Console.WriteLine($"{val}");
             };
             md2.OnValueChanged += (val) =>
             {
-                Console.WriteLine($"{val.INT16}");
+                Console.WriteLine($"{val}");
             };
             md3.OnValueChanged += (val) =>
             {
-                Console.WriteLine($"{val.BOOL}");
+                Console.WriteLine($"{val}");
             };
             md4.OnValueChanged += (val) =>
             {
-                Console.WriteLine($"{val.INT16}");
+                Console.WriteLine($"{val}");
             };
             deviceCommunication.AddDataPoint(md2);
             deviceCommunication.AddDataPoint(md);
@@ -258,10 +258,10 @@ namespace test
         {
             sw.Restart();
             deviceCommunication.Write(
-                (deviceCommunication["BOOL数据"], !deviceCommunication["BOOL数据"].GetValue().BOOL),
-                (deviceCommunication["INT32数据"], deviceCommunication["INT32数据"].GetValue().INT32 + 1),
-                (deviceCommunication["INT32数据_1"], deviceCommunication["INT32数据_1"].GetValue().INT32 + 1),
-                (deviceCommunication["INT16数据"], deviceCommunication["INT16数据"].GetValue().INT16 + 1));
+                (deviceCommunication["BOOL数据"], !deviceCommunication["BOOL数据"].GetValue().As<bool>()),
+                (deviceCommunication["INT32数据"], deviceCommunication["INT32数据"].GetValue().As<Int32>() + 1),
+                (deviceCommunication["INT32数据_1"], deviceCommunication["INT32数据_1"].GetValue().As<Int32>() + 1),
+                (deviceCommunication["INT16数据"], deviceCommunication["INT16数据"].GetValue().As<Int16>() + 1));
             Console.WriteLine("时间: " + sw.ElapsedMilliseconds);
         }
 
@@ -269,8 +269,8 @@ namespace test
         {
             sw.Restart();
             deviceCommunication.Write(
-                (deviceCommunication["BOOL数据"], !deviceCommunication["BOOL数据"].GetValue().BOOL),
-                (deviceCommunication["INT16数据"], deviceCommunication["INT16数据"].GetValue().INT16 + 1));
+                (deviceCommunication["BOOL数据"], !deviceCommunication["BOOL数据"].GetValue().As<bool>()),
+                (deviceCommunication["INT16数据"], deviceCommunication["INT16数据"].GetValue().As<Int16>() + 1));
             Console.WriteLine("时间: " + sw.ElapsedMilliseconds);
 
         }
@@ -290,7 +290,7 @@ namespace test
             };
             mp1.OnValueChanged += (val) => 
             {
-                Console.WriteLine($"{mp1.Input} : {val.UINT32}");
+                Console.WriteLine($"{mp1.Input} : {val}");
             };
             Mc3EDataPoint mp2 = new Mc3EDataPoint()
             {
@@ -300,7 +300,7 @@ namespace test
             };
             mp2.OnValueChanged += (val) =>
             {
-                Console.WriteLine($"{mp2.Input} : {val.INT16}");
+                Console.WriteLine($"{mp2.Input} : {val}");
             };
             Mc3EDataPoint mp3 = new Mc3EDataPoint()
             {
@@ -310,7 +310,7 @@ namespace test
             };
             mp3.OnValueChanged += (val) =>
             {
-                Console.WriteLine($"{mp3.Input} : {val.DOUBLE}");
+                Console.WriteLine($"{mp3.Input} : {val}");
             };
             mitsubis3E_Device.AddDataPoint(mp1);
             mitsubis3E_Device.AddDataPoint(mp2);
@@ -334,9 +334,9 @@ namespace test
         {
             sw.Restart();
             mitsubis3E_Device.Write(
-                (mitsubis3E_Device["测试D900"], mitsubis3E_Device["测试D900"].GetValue().DOUBLE + 1),
-                (mitsubis3E_Device["测试D500"], mitsubis3E_Device["测试D500"].GetValue().INT16 + 1),
-                (mitsubis3E_Device["测试D100"], mitsubis3E_Device["测试D100"].GetValue().UINT32 + 1)
+                (mitsubis3E_Device["测试D900"], mitsubis3E_Device["测试D900"].GetValue().As<double>() + 1),
+                (mitsubis3E_Device["测试D500"], mitsubis3E_Device["测试D500"].GetValue().As<Int16>() + 1),
+                (mitsubis3E_Device["测试D100"], mitsubis3E_Device["测试D100"].GetValue().As<UInt32>() + 1)
                 );
             Console.WriteLine("时间: " + sw.ElapsedMilliseconds);
 

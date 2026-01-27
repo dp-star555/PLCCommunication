@@ -70,7 +70,7 @@
     <Compile Include="Stream\FrameModules\LengthModule.cs" />
     <Compile Include="Stream\FrameModules\MarkModule.cs" />
     <Compile Include="Stream\FrameModules\VarBytesModule.cs" />
-    <Compile Include="Stream\FrameSplitter\DelimiterFrameSplitter .cs" />
+    <Compile Include="Stream\FrameSplitter\DelimiterFrameSplitter.cs" />
     <Compile Include="Stream\FrameSplitter\FrameDecodeContext.cs" />
     <Compile Include="Stream\FrameSplitter\IFrameSplitter.cs" />
     <Compile Include="Stream\FrameSplitter\LengthFrameSplitter .cs" />

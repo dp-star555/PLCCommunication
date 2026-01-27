@@ -696,15 +696,11 @@ namespace PLCCommunication_Base.Mitsubishi3E
                 case McDeviceCode.X:
                 case McDeviceCode.Y:
                 case McDeviceCode.B:
-                    return new DeviceValue()
-                    {
-                        BOOL = ((bool[])mValueGroup[mp.DecodeData.Area])[mp.DecodeData.Address]
-                    };
+                    return ((bool[])mValueGroup[mp.DecodeData.Area])[mp.DecodeData.Address];
                 case McDeviceCode.D:
                 case McDeviceCode.W:
                 case McDeviceCode.R:
                     ReadOnlySpan<byte> bytes = ((byte[])mValueGroup[mp.DecodeData.Area]).AsSpan(mp.DecodeData.Address * 2, mp.GetLength() * 2);
-                    
                     return ValueDecoder.Decode(bytes,mp.DataType,0);
                 default:
                     break;

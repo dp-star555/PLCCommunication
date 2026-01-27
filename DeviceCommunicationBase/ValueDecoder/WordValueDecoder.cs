@@ -151,9 +151,9 @@ namespace CommunicationBase
 
                     }
                     if (dataEndian.HasFlag(DataEndianKind.IsBigEndian))
-                        return new DeviceValue { INT16 = BinaryPrimitives.ReadInt16BigEndian(temp) };
+                        return BinaryPrimitives.ReadInt16BigEndian(temp);
                     else
-                        return new DeviceValue { INT16 = BinaryPrimitives.ReadInt16LittleEndian(temp) };
+                        return BinaryPrimitives.ReadInt16LittleEndian(temp);
                 case DataType.UINT16:
                     if (dataEndian.HasFlag(DataEndianKind.IsSwapBytesInWord))
                     {
@@ -166,9 +166,9 @@ namespace CommunicationBase
 
                     }
                     if (dataEndian.HasFlag(DataEndianKind.IsBigEndian))
-                        return new DeviceValue { UINT16 = BinaryPrimitives.ReadUInt16BigEndian(temp) };
+                        return BinaryPrimitives.ReadUInt16BigEndian(temp);
                     else
-                        return new DeviceValue { UINT16 = BinaryPrimitives.ReadUInt16LittleEndian(temp) };
+                        return BinaryPrimitives.ReadUInt16LittleEndian(temp);
                 case DataType.INT32:
                     if (dataEndian.HasFlag(DataEndianKind.IsSwapBytesInWord))
                     {
@@ -184,9 +184,9 @@ namespace CommunicationBase
                         buffer.Slice(0, 4).CopyTo(temp);
                     }
                     if (dataEndian.HasFlag(DataEndianKind.IsBigEndian))
-                        return new DeviceValue { INT32 = BinaryPrimitives.ReadInt32BigEndian(temp) };
+                        return BinaryPrimitives.ReadInt32BigEndian(temp);
                     else
-                        return new DeviceValue { INT32 = BinaryPrimitives.ReadInt32LittleEndian(temp) };
+                        return BinaryPrimitives.ReadInt32LittleEndian(temp);
                 case DataType.UINT32:
                     if (dataEndian.HasFlag(DataEndianKind.IsSwapBytesInWord))
                     {
@@ -202,9 +202,9 @@ namespace CommunicationBase
                         buffer.Slice(0, 4).CopyTo(temp);
                     }
                     if (dataEndian.HasFlag(DataEndianKind.IsBigEndian))
-                        return new DeviceValue { UINT32 = BinaryPrimitives.ReadUInt32BigEndian(temp) };
+                        return BinaryPrimitives.ReadUInt32BigEndian(temp);
                     else
-                        return new DeviceValue { UINT32 = BinaryPrimitives.ReadUInt32LittleEndian(temp) };
+                        return BinaryPrimitives.ReadUInt32LittleEndian(temp);
                 case DataType.SINGLE:
                     if (dataEndian.HasFlag(DataEndianKind.IsSwapBytesInWord))
                     {
@@ -225,7 +225,7 @@ namespace CommunicationBase
                     else
                         raw = BinaryPrimitives.ReadUInt32LittleEndian(temp);
                     byte[] bytes = BitConverter.GetBytes(raw);
-                    return new DeviceValue { SINGLE = BitConverter.ToSingle(bytes,0) };
+                    return BitConverter.ToSingle(bytes, 0);
                 case DataType.DOUBLE:
                     if (dataEndian.HasFlag(DataEndianKind.IsSwapBytesInWord))
                     {
@@ -246,7 +246,7 @@ namespace CommunicationBase
                     else
                         draw = BinaryPrimitives.ReadUInt64LittleEndian(temp);
                     byte[] dbytes = BitConverter.GetBytes(draw);
-                    return new DeviceValue { DOUBLE = BitConverter.ToDouble(dbytes,0) };
+                    return BitConverter.ToDouble(dbytes, 0);
                 case DataType.UTF32:
                     byte[] utf32temp = new byte[buffer.Length];
                     if (dataEndian.HasFlag(DataEndianKind.IsSwapBytesInWord))
@@ -268,11 +268,11 @@ namespace CommunicationBase
                         decoder = new System.Text.UTF32Encoding(true, false);
                     else
                         decoder = System.Text.Encoding.UTF32;
-                    return new DeviceValue { STRING = decoder.GetString(utf32temp) };
+                    return decoder.GetString(utf32temp);
                 case DataType.ASCII:
                     byte[] asciitemp = new byte[buffer.Length];
                     buffer.Slice(0, buffer.Length).CopyTo(asciitemp);
-                    return new DeviceValue { STRING = System.Text.ASCIIEncoding.ASCII.GetString(asciitemp) };
+                    return System.Text.ASCIIEncoding.ASCII.GetString(asciitemp);
                 case DataType.BIT:
             default:
                     throw new NotSupportedException($"未实现的 DataType: {dataType}");
