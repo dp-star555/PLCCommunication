@@ -164,26 +164,15 @@ namespace DeviceCommunicationBase.Stream
 
                 // 发送数据
                 if (!mClient.Send(buffer, buffer.Length)) return null;
-
-                //  等待 TCS 被 SetResult (或者超时)
-                var timeoutTask = Task.Delay(timeoutMs);
-                var completedTask = await Task.WhenAny(mCurrentRequestTcs.Task, timeoutTask);
-
-                if (completedTask == timeoutTask)
-                {
-                    mCurrentRequestTcs.TrySetCanceled(); // 超时后作废
-                    return null; // 超时返回 null
-                }
-
-                return await mCurrentRequestTcs.Task; // 返回收到的数据
+                return await mCurrentRequestTcs.Task.TaskWaitAsync(timeoutMs);
             }
             catch
             {
+                mCurrentRequestTcs.TrySetCanceled(); // 超时后作废
                 return null;
             }
             finally
             {
-                // E. 清理现场
                 mCurrentRequestTcs = null;
                 mSendLock.Release();
             }
@@ -212,6 +201,7 @@ namespace DeviceCommunicationBase.Stream
         public void Dispose()
         {
             Disconnect();
+            mSendLock.Dispose();
         }
     }
 }

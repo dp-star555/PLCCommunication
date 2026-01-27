@@ -341,6 +341,25 @@ namespace DeviceCommunicationBase
             }
         }
 
+        /// <summary>
+        /// 异步等待结果，超时弹异常
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="task"></param>
+        /// <param name="timeoutMs"></param>
+        /// <returns></returns>
+        /// <exception cref="TimeoutException"></exception>
+        public static async Task<T> TaskWaitAsync<T>(this Task<T> task, int timeoutMs) 
+        {
+            var delayTask = Task.Delay(timeoutMs);
+            var completedTask = await Task.WhenAny(task, delayTask);
 
+            if (completedTask == delayTask)
+            {
+                throw new TimeoutException("Task Wait time out.");
+            }
+
+            return await task; // 重新 await 以获取结果或抛出原任务的异常
+        }
     }
 }
