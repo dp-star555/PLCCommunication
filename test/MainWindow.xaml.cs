@@ -26,8 +26,6 @@ namespace test
             mitsubis3E_Device = container.Resolve<Mitsubis3E_Device>("test_3E");
             commPortManager = container.Resolve<CommPortManager>();
             commPortManager.AddPort("1", new HPSocketPort_Client() { });
-
-
         }
 
         CommPortManager commPortManager;

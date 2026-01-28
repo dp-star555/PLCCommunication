@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DeviceCommunicationBase
 {
-    public class CommunicationDeviceManager
+    public class CommunicationDeviceMge
     {
         private readonly ConcurrentDictionary<string, ICommunication> mPorts = new ConcurrentDictionary<string, ICommunication>();
 

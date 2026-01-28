@@ -51,7 +51,6 @@ namespace DeviceCommunicationBase
                 }
             });
 
-            mDevice.is
         }
 
         public async Task StopAsync()
