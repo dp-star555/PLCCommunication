@@ -57,11 +57,13 @@
     <Compile Include="CommunicationDataPoint.cs" />
     <Compile Include="CsvHelper.cs" />
     <Compile Include="CommuniactionDeviceManager.cs" />
+    <Compile Include="DeviceAutoReader\DeviceAutoReaderMge.cs" />
     <Compile Include="Device\Mitsubishi\Mitsubis3E.cs" />
     <Compile Include="Device\Modbus\ModbusAddressConverter_General.cs" />
     <Compile Include="Device\Modbus\ModbusDataPoint.cs" />
     <Compile Include="Device\Modbus\TCP\INOVANCE\ModbusTCP_INOV_Small.cs" />
     <Compile Include="Device\Modbus\TCP\ModbusTCP_Device.cs" />
+    <Compile Include="DeviceAutoReader\DeviceAutoReader.cs" />
     <Compile Include="Stream\FrameBuilder\FrameComposer.cs" />
     <Compile Include="Stream\FrameModules\CheckModule.cs" />
     <Compile Include="Stream\FrameModules\ConstBytesModule.cs" />

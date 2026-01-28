@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DeviceCommunicationBase;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -42,6 +43,11 @@ namespace CommunicationBase
         ASCII
     }
 
+    public interface ICanAutoRead
+    {
+        bool CanAutoRead { get; }
+    }
+
     /// <summary>
     /// 用于设备读写的接口
     /// </summary>
@@ -62,21 +68,9 @@ namespace CommunicationBase
         /// </summary>
         string ID { get; }
         /// <summary>
-        /// 遍历间隔
-        /// </summary>
-        int Interval { get; set; }
-        /// <summary>
         /// 是否链接
         /// </summary>
         bool IsConnected { get; }
-        /// <summary>
-        /// 是否允许自动读取
-        /// </summary>
-        bool CanAutoRead { get; }
-        /// <summary>
-        /// 自动读取是否启动
-        /// </summary>
-        bool IsReadAuto { get; }
         /// <summary>
         /// 设备通讯的类型
         /// </summary>
@@ -139,18 +133,9 @@ namespace CommunicationBase
         /// <param name="index"></param>
         /// <param name="value"></param>
         Task WriteAsync(ICommunicationDataPoint dp, object value);
-        /// <summary>
-        /// 启动自动读取
-        /// </summary>
-        void StartAutoRead();
-        /// <summary>
-        /// 停止自动读取
-        /// </summary>
-        /// <returns></returns>
-        Task StopAutoRead();
     }
 
-    public abstract class DeviceCommunication : ICommunication
+    public abstract class DeviceCommunication : ICommunication, ICanAutoRead
     {
         /// <summary>
         /// 用于变更事件运行的通道()
@@ -265,9 +250,6 @@ namespace CommunicationBase
             ValueChangeCallBackChannel.Writer.TryWrite((cb, value));
         }
 
-        CancellationTokenSource mCtsTask;
-        protected bool mIsReadAuto;
-        protected Task mAutoReadTask;
 
         public abstract ICommunicationDataPoint this[string name] { get; }
 
@@ -279,17 +261,13 @@ namespace CommunicationBase
 
         public int TimeOutMs { get; set; }
 
-        public bool IsReadAuto { get { return mIsReadAuto; } }
-
-        public int Interval { get; set; } = 100;
-
         public virtual IInputConverter InputConverter { get; set; }
 
         public IValueDecoder ValueDecoder { get; set; } = new WordValueDecoder();
 
-        public abstract bool CanAutoRead { get; set; }
-
         public abstract DeviceProtocolType CommunicationType { get; }
+
+        public abstract bool CanAutoRead { get; }
 
         public abstract Task Connect();
 
@@ -307,63 +285,6 @@ namespace CommunicationBase
 
         public abstract Task WriteAsync(ICommunicationDataPoint dp, object value);
 
-        DateTime time;
-        public void StartAutoRead()
-        {
-            if (IsReadAuto || !CanAutoRead)
-            {
-                return;
-            }
-            mIsReadAuto = true;
-            mCtsTask = new CancellationTokenSource();
-            mAutoReadTask = Task.Run(async () =>
-            {
-                time = DateTime.Now;
-                try
-                {
-                    while (!mCtsTask.IsCancellationRequested)
-                    {
-                        await ReadAsync(mCtsTask.Token).ConfigureAwait(false);
-                        int sleep = Interval - (DateTime.Now - time).Milliseconds;
-                        Console.WriteLine($"循环时间：{(DateTime.Now - time).Milliseconds} ms");
-                        if (sleep > 0)
-                            await Task.Delay(sleep, mCtsTask.Token).ConfigureAwait(false);
-                        time = DateTime.Now;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.ToString());
-                }
-                finally
-                {
-                    mCtsTask = null;
-                }
-        }); 
-        }
 
-        public async Task StopAutoRead()
-        {
-            if (!IsReadAuto) return;
-            mCtsTask?.Cancel();     
-            if (mAutoReadTask != null)
-            {
-                try
-                {
-                    await mAutoReadTask.ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
-                finally
-                {
-                    mAutoReadTask = null;
-                }
-            }
-            mIsReadAuto = false;
-            mCtsTask?.Dispose();
-            mCtsTask = null;
-        }
     }
 }

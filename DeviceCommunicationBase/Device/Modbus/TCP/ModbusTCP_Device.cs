@@ -1,4 +1,5 @@
 ﻿using CommunicationBase;
+using DeviceCommunicationBase;
 using NModbus;
 using PLCCommunication_Base.Modbus;
 using System;
@@ -93,8 +94,6 @@ namespace PLCCommunication_Base.Modbus
         public int Port { get; set; } = 502;
         public byte SlaveID { get; set; } = 1;
         public string PortsConfigPath { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config", "ConfigData_ModbusTCP");
-
-        public override bool CanAutoRead { get; set; } = true;
 
         public override DeviceProtocolType CommunicationType { get { return DeviceProtocolType.ModbusTCP; } }
 

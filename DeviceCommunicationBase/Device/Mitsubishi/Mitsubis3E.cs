@@ -266,7 +266,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
             }
         }
 
-        public override bool CanAutoRead { get; set; } = true;
+        public override bool CanAutoRead { get; } = true;
 
         public override DeviceProtocolType CommunicationType { get; } = DeviceProtocolType.MC3E;
 

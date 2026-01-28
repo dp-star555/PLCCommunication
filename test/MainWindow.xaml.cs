@@ -238,7 +238,6 @@ namespace test
 
         private void button1_Click(object sender, RoutedEventArgs e)
         {
-
             deviceCommunication.StartAutoRead();
 
         }
