@@ -1,4 +1,6 @@
 ﻿using DeviceCommunicationBase;
+using DeviceCommunicationBase.Stream;
+using Prism.Ioc;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,6 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace CommunicationBase
 {
@@ -137,119 +140,12 @@ namespace CommunicationBase
 
     public abstract class DeviceCommunication : ICommunication, ICanAutoRead
     {
-        /// <summary>
-        /// 用于变更事件运行的通道()
-        /// </summary>
-        static Channel<(ValueChangedDelegate cb, DeviceValue value)> ValueChangeCallBackChannel;
-        static CancellationTokenSource mCtsChannel;
-        static Task[] mConsumerTasks;
-        /// <summary>
-        /// 通道是否正在工作
-        /// </summary>
-        public static bool IsChannelRunning { get; set; }
-        /// <summary>
-        /// 回调处理线程，用于统一集中处理数据变更的回调
-        /// </summary>
-        /// <param name="dop"></param>
-        public static void StartCallBackRunner(int dop = 2)
+        public DeviceCommunication(IContainerProvider container) 
         {
-            if (IsChannelRunning)
-            {
-                return;
-            }
-            mCtsChannel = new CancellationTokenSource();
-            mConsumerTasks = new Task[dop];
-            ValueChangeCallBackChannel = Channel.CreateUnbounded<(ValueChangedDelegate cb, DeviceValue value)>(new UnboundedChannelOptions
-            {
-                SingleWriter = false, // 允许多个生产者（多个设备同时写入）
-                SingleReader = false  // 允许多个消费者（并行处理回调）
-            });
-            for (int i = 0; i < dop; i++)
-            {
-                mConsumerTasks[i] = StartConsumingAsync(mCtsChannel.Token);
-            }
-            IsChannelRunning = true;
-        }
-        /// <summary>
-        /// 启动等待通道数据的异步线程
-        /// </summary>
-        /// <param name="ct"></param>
-        /// <returns></returns>
-        static async Task StartConsumingAsync(CancellationToken ct)
-        {
-            try
-            {
-                var reader = ValueChangeCallBackChannel.Reader;
-                while (await reader.WaitToReadAsync(ct).ConfigureAwait(false))
-                {
-                    while (reader.TryRead(out var item))
-                    {
-                        try
-                        {
-                            if (item.cb != null)
-                            {
-                                item.cb(item.value);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex);
-                        }
-                    }
-                }
-            }
-            catch (OperationCanceledException oex)
-            {
-                // 正常取消
-                Console.WriteLine(oex);
-            }
-            catch (Exception ex)
-            {
-                // 记录日志
-                Console.WriteLine(ex);
-            }
-        }
-        /// <summary>
-        /// 停止并退出通道
-        /// </summary>
-        public static async Task StopCallBackRunnerAsync()
-        {
-            if (!IsChannelRunning) return;
-            // 告诉通道：不再接收新数据了
-            // 消费者线程会继续处理完缓冲区里的剩余数据，然后 reader.WaitToReadAsync 返回 false
-            ValueChangeCallBackChannel?.Writer.TryComplete();
-            try
-            {
-                // 等待所有消费者线程安全退出
-                if (mConsumerTasks.Length > 0)
-                {
-                    await Task.WhenAll(mConsumerTasks);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"停止通道时发生异常: {ex.Message}");
-            }
-            finally
-            {
-                mCtsChannel?.Dispose();
-                mCtsChannel = null;
-                mConsumerTasks = null;
-                IsChannelRunning = false;
-            }
-        }
-        /// <summary>
-        /// 添加数据到回调通道
-        /// </summary>
-        /// <param name="cb"></param>
-        /// <param name="value"></param>
-        public static void Enqueue(ValueChangedDelegate cb, DeviceValue value)
-        {
-            if (!IsChannelRunning) return;
-
-            ValueChangeCallBackChannel.Writer.TryWrite((cb, value));
+            mChangedMge = container.Resolve<IValueChangedMge>();
         }
 
+        protected IValueChangedMge mChangedMge;
 
         public abstract ICommunicationDataPoint this[string name] { get; }
 

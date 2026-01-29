@@ -18,111 +18,6 @@ using static PLCCommunication_Base.Mitsubishi3E.Mc3EBinaryPacketBuilder;
 namespace PLCCommunication_Base.Mitsubishi3E
 {
     /// <summary>
-    /// MC 设备码（3E Binary）
-    /// </summary>
-    public enum McDeviceCode : byte
-    {
-        // bit
-        M = 0x90,
-        X = 0x9C,
-        Y = 0x9D,
-        B = 0xA0,
-        // word
-        D = 0xA8,
-        W = 0xB4,
-        R = 0xAF,
-    }
-
-    /// <summary>
-    /// 解析后的数据
-    /// </summary>
-    public class MCDecodeData
-    {
-        public McDeviceCode Area;
-        public ushort Address;
-    }
-
-    /// <summary>
-    /// MC 链接地址数据
-    /// </summary>
-    public class Mc3EDataPoint : ICommunicationDataPoint
-    {
-        /// <summary>
-        /// 数据点回调
-        /// </summary>
-        ValueChangedDelegate valueChanged;
-
-        DeviceCommunication mPanel;
-
-        public DeviceCommunication Panel { set { mPanel = value; } }
-        public string Name { get; set; } = string.Empty;
-        public MCDecodeData DecodeData { get; set; } = new MCDecodeData();
-        public string Input { get; set; }
-
-        public DataType DataType { get; set; }
-
-        public int StrLength { get; set; }
-
-        public ushort GetLength()
-        {
-            switch (DataType)
-            {
-                case DataType.BIT:
-                case DataType.INT16:
-                case DataType.UINT16:
-                    return 1;
-                case DataType.INT32:
-                case DataType.UINT32:
-                case DataType.SINGLE:
-                    return 2;
-                case DataType.DOUBLE:
-                    return 4;
-                case DataType.UTF32:
-                    return (ushort)(StrLength * 2);
-                case DataType.ASCII:
-                    return (ushort)((StrLength + 2 - 1) / 2);
-                default:
-                    throw new Exception("当前类型无法对应长度");
-            }
-        }
-
-        public int LastGeneration { get; set; }
-
-        public event ValueChangedDelegate OnValueChanged
-        {
-            add
-            {
-                //防止重复添加
-                if (valueChanged != null && valueChanged.GetInvocationList().Contains(value))
-                {
-                    return;
-                }
-                valueChanged += value;
-            }
-            remove
-            {
-                valueChanged -= value;
-            }
-        }
-
-        public ValueChangedDelegate GetValChangeDel()
-        {
-            return valueChanged;
-        }
-
-        public DeviceValue GetValue()
-        {
-            //串行读取
-            return ((Mitsubis3E_Device)mPanel).DecodeValue(this);
-        }
-
-        public void SetValue(object val)
-        {
-            ((Mitsubis3E_Device)mPanel).Write(this, val);
-        }
-    }
-
-    /// <summary>
     /// 数据块描述
     /// </summary>
     class AddressBlock
@@ -135,7 +30,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
     public class Mitsubis3E_Device : DeviceCommunication
     {
         IContainerProvider  containerProvider;
-        public Mitsubis3E_Device(IContainerProvider container)
+        public Mitsubis3E_Device(IContainerProvider container):base(container) 
         {
             containerProvider=  container ;
             // 当拆出一帧完整包时：交付给等待方
@@ -182,19 +77,19 @@ namespace PLCCommunication_Base.Mitsubishi3E
         /// <summary>
         /// 数据集合
         /// </summary>
-        Dictionary<McDeviceCode, Array> mValueGroup = new Dictionary<McDeviceCode, Array>();
+        Dictionary<E_McDeviceCode, Array> mValueGroup = new Dictionary<E_McDeviceCode, Array>();
         /// <summary>
         /// 输入的原始数据
         /// </summary>
-        Dictionary<McDeviceCode, List<int>> mReadData_Base = new Dictionary<McDeviceCode, List<int>>();
+        Dictionary<E_McDeviceCode, List<int>> mReadData_Base = new Dictionary<E_McDeviceCode, List<int>>();
         /// <summary>
         /// 用于回调进行索引的字典
         /// </summary>
-        Dictionary<McDeviceCode, Dictionary<int, List<Mc3EDataPoint>>> mEventMap = new Dictionary<McDeviceCode, Dictionary<int, List<Mc3EDataPoint>>>();
+        Dictionary<E_McDeviceCode, Dictionary<int, List<Mc3EDataPoint>>> mEventMap = new Dictionary<E_McDeviceCode, Dictionary<int, List<Mc3EDataPoint>>>();
         /// <summary>
         /// 用于排序后的读取列表
         /// </summary>
-        Dictionary<McDeviceCode, List<AddressBlock>> mReadList = new Dictionary<McDeviceCode, List<AddressBlock>>();
+        Dictionary<E_McDeviceCode, List<AddressBlock>> mReadList = new Dictionary<E_McDeviceCode, List<AddressBlock>>();
 
         /// <summary>
         /// 允许的连续空位
@@ -205,19 +100,19 @@ namespace PLCCommunication_Base.Mitsubishi3E
         /// </summary>
         /// <param name="code"></param>
         /// <param name="num"></param>
-        public void ConfigValueArray(McDeviceCode code, ushort num)
+        public void ConfigValueArray(E_McDeviceCode code, ushort num)
         {
             if (!mValueGroup.ContainsKey(code))
             {
                 switch (code)
                 {
-                    case McDeviceCode.M:
-                    case McDeviceCode.X:
-                    case McDeviceCode.Y:
+                    case E_McDeviceCode.M:
+                    case E_McDeviceCode.X:
+                    case E_McDeviceCode.Y:
                         mValueGroup.Add(code, new bool[num]);
                         break;
-                    case McDeviceCode.D:
-                    case McDeviceCode.R:
+                    case E_McDeviceCode.D:
+                    case E_McDeviceCode.R:
                         mValueGroup.Add(code, new byte[num * 2]);
                         break;
                     default:
@@ -310,7 +205,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
             bool hasHexSuffix = match.Groups["Suffix"].Success; // 检查是否有 H 后缀
             int addrNum = dp.GetLength();
 
-            McDeviceCode dc;
+            E_McDeviceCode dc;
 
             if (!mNameIndex.ContainsKey(point.Name))
             {
@@ -385,7 +280,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
             // 遍历每个区域
             foreach (var areaKvp in mReadData_Base)
             {
-                McDeviceCode code = areaKvp.Key;
+                E_McDeviceCode code = areaKvp.Key;
                 List<int> baseList = areaKvp.Value;
 
                 if (baseList == null || baseList.Count == 0)
@@ -421,16 +316,16 @@ namespace PLCCommunication_Base.Mitsubishi3E
 
                     switch (code)
                     {
-                        case McDeviceCode.M:
-                        case McDeviceCode.X:
-                        case McDeviceCode.Y:
-                        case McDeviceCode.B:
+                        case E_McDeviceCode.M:
+                        case E_McDeviceCode.X:
+                        case E_McDeviceCode.Y:
+                        case E_McDeviceCode.B:
                             isConsecutive = (currentAddr <= prevAddr + HoleThreshold * 4);
                             isFull = currentBlock.Length >= MAX_BLOCK_SIZE_BOOL;
                             break;
-                        case McDeviceCode.D:
-                        case McDeviceCode.W:
-                        case McDeviceCode.R:
+                        case E_McDeviceCode.D:
+                        case E_McDeviceCode.W:
+                        case E_McDeviceCode.R:
                             isConsecutive = (currentAddr <= prevAddr + HoleThreshold);
                             isFull = currentBlock.Length >= MAX_BLOCK_SIZE;
                             break;
@@ -483,7 +378,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
             // 遍历所有已分类和排序的读取块
             foreach (var kvp in mReadList)
             {
-                McDeviceCode code = kvp.Key;
+                E_McDeviceCode code = kvp.Key;
                 List<AddressBlock> blocks = kvp.Value;
 
                 foreach (var block in blocks)
@@ -505,19 +400,19 @@ namespace PLCCommunication_Base.Mitsubishi3E
                             // 3. 解析数据并填充到 mValueGroup
                             switch (code)
                             {
-                                case McDeviceCode.M:
-                                case McDeviceCode.X:
-                                case McDeviceCode.Y:
-                                case McDeviceCode.B:
+                                case E_McDeviceCode.M:
+                                case E_McDeviceCode.X:
+                                case E_McDeviceCode.Y:
+                                case E_McDeviceCode.B:
                                     byte[] bv = new byte[response.Length - 11];
                                     Array.Copy(response, 11, bv, 0, bv.Length);
                                     bool[] values = bv.ToHexBoolsUnsafe();
                                     //进行比较,复制，触发变更
                                     ProcessData_Bool(code,(bool[])mValueGroup[code], block.StartAddress, values);
                                     break;
-                                case McDeviceCode.D:
-                                case McDeviceCode.W:
-                                case McDeviceCode.R:
+                                case E_McDeviceCode.D:
+                                case E_McDeviceCode.W:
+                                case E_McDeviceCode.R:
                                     ProcessData_Byte(code, (byte[])mValueGroup[code], block.StartAddress, response,11);
                                     break;
                                 default:
@@ -542,7 +437,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
             //手动读取单个点，不进行自动回调，与数据更新
 
             Mc3EDataPoint mp = dp as Mc3EDataPoint;
-            McDeviceCode code = mp.DecodeData.Area;
+            E_McDeviceCode code = mp.DecodeData.Area;
 
             int startAddr = mp.DecodeData.Address;
 
@@ -563,19 +458,19 @@ namespace PLCCommunication_Base.Mitsubishi3E
                 // 3. 解析数据并填充到 mValueGroup
                 switch (code)
                 {
-                    case McDeviceCode.M:
-                    case McDeviceCode.X:
-                    case McDeviceCode.Y:
-                    case McDeviceCode.B:
+                    case E_McDeviceCode.M:
+                    case E_McDeviceCode.X:
+                    case E_McDeviceCode.Y:
+                    case E_McDeviceCode.B:
                         byte[] bv = new byte[response.Length - 11];
                         Array.Copy(response, 11, bv, 0, bv.Length);
                         bool[] values = bv.ToHexBoolsUnsafe();
                         //进行比较,复制，触发变更
                         ProcessData_Bool(code, (bool[])mValueGroup[code], startAddr, values);
                         break;
-                    case McDeviceCode.D:
-                    case McDeviceCode.W:
-                    case McDeviceCode.R:
+                    case E_McDeviceCode.D:
+                    case E_McDeviceCode.W:
+                    case E_McDeviceCode.R:
                         ProcessData_Byte(code, (byte[])mValueGroup[code], startAddr, response, 11);
                         break;
                     default:
@@ -686,20 +581,20 @@ namespace PLCCommunication_Base.Mitsubishi3E
 
         public DeviceValue DecodeValue(Mc3EDataPoint mp)
         {
-            if (!IsChannelRunning)
+            if (!mChangedMge.IsChannelRunning)
             {
                 throw new Exception("自动读取没有开启，无法支持内存解码操作");
             }
             switch (mp.DecodeData.Area)
             {
-                case McDeviceCode.M:
-                case McDeviceCode.X:
-                case McDeviceCode.Y:
-                case McDeviceCode.B:
+                case E_McDeviceCode.M:
+                case E_McDeviceCode.X:
+                case E_McDeviceCode.Y:
+                case E_McDeviceCode.B:
                     return ((bool[])mValueGroup[mp.DecodeData.Area])[mp.DecodeData.Address];
-                case McDeviceCode.D:
-                case McDeviceCode.W:
-                case McDeviceCode.R:
+                case E_McDeviceCode.D:
+                case E_McDeviceCode.W:
+                case E_McDeviceCode.R:
                     ReadOnlySpan<byte> bytes = ((byte[])mValueGroup[mp.DecodeData.Area]).AsSpan(mp.DecodeData.Address * 2, mp.GetLength() * 2);
                     return ValueDecoder.Decode(bytes,mp.DataType,0);
                 default:
@@ -714,7 +609,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
         /// </summary>
         /// <param name="bl"></param>
         /// <param name="b2"></param>
-        private void ProcessData_Bool(McDeviceCode code, bool[] bl, int offest1, bool[] b2)
+        private void ProcessData_Bool(E_McDeviceCode code, bool[] bl, int offest1, bool[] b2)
         {
             int gen = Interlocked.Increment(ref mGeneration);
 
@@ -734,14 +629,15 @@ namespace PLCCommunication_Base.Mitsubishi3E
                     if (mEventMap.LastGeneration != gen)
                     {
                         DeviceValue val = this.DecodeValue(mEventMap);
-                        Enqueue(mEventMap.GetValChangeDel(), val);
+                        mChangedMge.Enqueue(mEventMap.GetValChangeDel_Light(), val,E_CallBackWeight.Light);
+                        mChangedMge.Enqueue(mEventMap.GetValChangeDel_Heavy(), val, E_CallBackWeight.Heavy);
                         mEventMap.LastGeneration = gen;
                     }
                 }
             }
         }
 
-        private void ProcessData_Byte(McDeviceCode code, byte[] bl, int offest1, byte[] b2, int offest2)
+        private void ProcessData_Byte(E_McDeviceCode code, byte[] bl, int offest1, byte[] b2, int offest2)
         {
             int gen = Interlocked.Increment(ref mGeneration);
 
@@ -763,7 +659,8 @@ namespace PLCCommunication_Base.Mitsubishi3E
                     if (mEventMap.LastGeneration != gen)
                     {
                         DeviceValue val = this.DecodeValue(mEventMap);
-                        Enqueue(mEventMap.GetValChangeDel(), val);
+                        mChangedMge.Enqueue(mEventMap.GetValChangeDel_Light(), val, E_CallBackWeight.Light);
+                        mChangedMge.Enqueue(mEventMap.GetValChangeDel_Heavy(), val, E_CallBackWeight.Heavy);
                         mEventMap.LastGeneration = gen;
                     }
                 }
@@ -793,7 +690,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
             /// 使用 Composer 自动生成读取报文
             /// 批量读取
             /// </summary>
-            public byte[] BuildRead(McDeviceCode code, int startAddr, int points)
+            public byte[] BuildRead(E_McDeviceCode code, int startAddr, int points)
             {
                 // 根据设备类型决定子命令
                 bool isBit = IsBitDevice(code);
@@ -904,9 +801,9 @@ namespace PLCCommunication_Base.Mitsubishi3E
                         .Add(new ConstBytesModule(data));                                   // 4. Data
             }
 
-            private bool IsBitDevice(McDeviceCode code)
+            private bool IsBitDevice(E_McDeviceCode code)
             {
-                return code == McDeviceCode.M || code == McDeviceCode.X || code == McDeviceCode.Y || code == McDeviceCode.B;
+                return code == E_McDeviceCode.M || code == E_McDeviceCode.X || code == E_McDeviceCode.Y || code == E_McDeviceCode.B;
             }
         }
     }

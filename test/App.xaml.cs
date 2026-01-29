@@ -2,6 +2,7 @@
 using DeviceCommunicationBase.Stream;
 using DryIoc;
 using PLCCommunication_Base.Mitsubishi3E;
+using PLCCommunication_Base.Modbus;
 using Prism.DryIoc;
 using Prism.Ioc;
 using System.Windows;
@@ -18,7 +19,10 @@ namespace test
         {
             // 注册本项目的视图
             containerRegistry.RegisterSingleton<CommPortManager>();
+            containerRegistry.RegisterSingleton<IValueChangedMge, DeviceValueChangedMge>();
+
             containerRegistry.Register<Mitsubis3E_Device>("test_3E");
+            containerRegistry.Register<ModbusTCP_Device>("test_hcMB");
 
             containerRegistry.RegisterSingleton<CommunicationDeviceMge>();
             containerRegistry.RegisterSingleton<MainWindow>();

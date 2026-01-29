@@ -10,6 +10,7 @@ using PLCCommunication_Base.Mitsubishi3E;
 using PLCCommunication_Base.Modbus;
 using Prism.Ioc;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 
@@ -26,6 +27,8 @@ namespace test
             mitsubis3E_Device = container.Resolve<Mitsubis3E_Device>("test_3E");
             commPortManager = container.Resolve<CommPortManager>();
             commPortManager.AddPort("1", new HPSocketPort_Client() { });
+
+            deviceCommunication = container.Resolve<ModbusTCP_Device>("test_hcMB");
         }
 
         CommPortManager commPortManager;
@@ -35,10 +38,7 @@ namespace test
         private async void button_Click(object sender, RoutedEventArgs e)
         {
 #if Base || EPSON
-            deviceCommunication = new ModbusTCP_Device()
-            {
-                IPAddress = "127.0.0.1"//"192.168.1.128"
-            };
+            deviceCommunication.IPAddress = "127.0.0.1";
             deviceCommunication.Port = 502;
             deviceCommunication.SetNum(8000, 8000, 20000, 8000);
 #endif
@@ -205,22 +205,22 @@ namespace test
                 DataType = DataType.INT16
             };
 
-            md.OnValueChanged += (val) =>
+            md.OnValueChanged ((val) =>
             {
                 Console.WriteLine($"{val}");
-            };
-            md2.OnValueChanged += (val) =>
+            });
+            md2.OnValueChanged ((val) =>
             {
                 Console.WriteLine($"{val}");
-            };
-            md3.OnValueChanged += (val) =>
+            });
+            md3.OnValueChanged( (val) =>
             {
                 Console.WriteLine($"{val}");
-            };
-            md4.OnValueChanged += (val) =>
+            });
+            md4.OnValueChanged((val) =>
             {
                 Console.WriteLine($"{val}");
-            };
+            });
             deviceCommunication.AddDataPoint(md2);
             deviceCommunication.AddDataPoint(md);
             deviceCommunication.AddDataPoint(md3);
@@ -230,7 +230,6 @@ namespace test
             deviceCommunication.SortOrderReadList();
 
            await deviceCommunication.Connect();
-            DeviceCommunication.StartCallBackRunner();
 
         }
 
@@ -276,8 +275,8 @@ namespace test
         {
 
             mitsubis3E_Device.Config("1");
-            mitsubis3E_Device.ConfigValueArray(McDeviceCode.M, 1500);
-            mitsubis3E_Device.ConfigValueArray(McDeviceCode.D, 1500);
+            mitsubis3E_Device.ConfigValueArray(E_McDeviceCode.M, 1500);
+            mitsubis3E_Device.ConfigValueArray(E_McDeviceCode.D, 1500);
 
             Mc3EDataPoint mp1 = new Mc3EDataPoint()
             {
@@ -285,30 +284,30 @@ namespace test
                 Input = "D100",
                 DataType = DataType.UINT32
             };
-            mp1.OnValueChanged += (val) => 
+            mp1.OnValueChanged ((val) => 
             {
                 Console.WriteLine($"{mp1.Input} : {val}");
-            };
+            });
             Mc3EDataPoint mp2 = new Mc3EDataPoint()
             {
                 Name = "测试D500",
                 Input = "D500",
                 DataType = DataType.INT16
             };
-            mp2.OnValueChanged += (val) =>
+            mp2.OnValueChanged ( (val) =>
             {
                 Console.WriteLine($"{mp2.Input} : {val}");
-            };
+            });
             Mc3EDataPoint mp3 = new Mc3EDataPoint()
             {
                 Name = "测试D900",
                 Input = "D900",
                 DataType = DataType.DOUBLE
             };
-            mp3.OnValueChanged += (val) =>
+            mp3.OnValueChanged ((val) =>
             {
                 Console.WriteLine($"{mp3.Input} : {val}");
-            };
+            });
             mitsubis3E_Device.AddDataPoint(mp1);
             mitsubis3E_Device.AddDataPoint(mp2);
             mitsubis3E_Device.AddDataPoint(mp3);
@@ -323,7 +322,6 @@ namespace test
             mitsubis3E_Device.Connect();
             mitsubis3E_Device.StartAutoRead();
 
-            DeviceCommunication.StartCallBackRunner();
 
         }
 

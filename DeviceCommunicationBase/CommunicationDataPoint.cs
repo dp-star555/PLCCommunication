@@ -63,16 +63,22 @@ namespace CommunicationBase
         }
     }
 
+
+    public enum E_CallBackWeight
+    {
+        Light,
+        Heavy
+    }
+
     public interface ICommunicationDataPoint
     {
         /// <summary>
         /// 隶属的设备
         /// </summary>
         DeviceCommunication Panel { set; }
-        /// <summary>
-        /// 时间变更事件
-        /// </summary>
-        event ValueChangedDelegate OnValueChanged;
+
+        void OnValueChanged(ValueChangedDelegate vcd, E_CallBackWeight weight = E_CallBackWeight.Light);
+
         /// <summary>
         /// 点位名称
         /// </summary>
@@ -106,10 +112,15 @@ namespace CommunicationBase
         /// <returns></returns>
         ushort GetLength();
         /// <summary>
-        /// 获取数据变更多播委托
+        /// 获取数据轻变更多播委托
         /// </summary>
         /// <returns></returns>
-        ValueChangedDelegate GetValChangeDel();
+        ValueChangedDelegate GetValChangeDel_Light();
+        /// <summary>
+        /// 获取数据重变更多播委托
+        /// </summary>
+        /// <returns></returns>
+        ValueChangedDelegate GetValChangeDel_Heavy();
     }
 
 }

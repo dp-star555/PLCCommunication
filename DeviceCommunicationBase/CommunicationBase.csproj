@@ -59,6 +59,7 @@
     <Compile Include="CommuniactionDeviceMge.cs" />
     <Compile Include="DeviceAutoReader\DeviceAutoReaderMge.cs" />
     <Compile Include="DeviceAutoReader\DeviceValueChangedMge.cs" />
+    <Compile Include="Device\Mitsubishi\MCDataPoint.cs" />
     <Compile Include="Device\Mitsubishi\Mitsubis3E.cs" />
     <Compile Include="Device\Modbus\ModbusAddressConverter_General.cs" />
     <Compile Include="Device\Modbus\ModbusDataPoint.cs" />

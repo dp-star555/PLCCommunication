@@ -2,6 +2,7 @@
 using DeviceCommunicationBase;
 using NModbus;
 using PLCCommunication_Base.Modbus;
+using Prism.Ioc;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,6 +21,12 @@ namespace PLCCommunication_Base.Modbus
     /// </summary>
     public class ModbusTCP_Device : DeviceCommunication
     {
+
+        public ModbusTCP_Device(IContainerProvider container) : base(container)
+        { 
+        
+        }
+
         public virtual void SetNum(ushort coilNum, ushort discreteInputsNum, ushort holdingRegistersNum, ushort inputRegistersNum ) 
         {
             mCoils = new bool[coilNum];
@@ -96,6 +103,8 @@ namespace PLCCommunication_Base.Modbus
         public string PortsConfigPath { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config", "ConfigData_ModbusTCP");
 
         public override DeviceProtocolType CommunicationType { get { return DeviceProtocolType.ModbusTCP; } }
+
+        public override bool CanAutoRead { get; } = true;
 
         public override ICommunicationDataPoint this[string name]
         {
@@ -680,7 +689,8 @@ namespace PLCCommunication_Base.Modbus
                             if (item.LastGeneration != gen)
                             {
                                 DeviceValue val = this.DecodeValue(item);
-                                Enqueue(item.GetValChangeDel(), val);
+                                mChangedMge.Enqueue(item.GetValChangeDel_Light(), val, E_CallBackWeight.Light);
+                                mChangedMge.Enqueue(item.GetValChangeDel_Heavy(), val, E_CallBackWeight.Heavy);
                                 item.LastGeneration = gen;
                             }
                         }
@@ -730,7 +740,8 @@ namespace PLCCommunication_Base.Modbus
                             if (item.LastGeneration != gen)
                             {
                                 DeviceValue val = this.DecodeValue(item);
-                                Enqueue(item.GetValChangeDel(), val);
+                                mChangedMge.Enqueue(item.GetValChangeDel_Light(), val, E_CallBackWeight.Light);
+                                mChangedMge.Enqueue(item.GetValChangeDel_Heavy(), val, E_CallBackWeight.Heavy);
                                 item.LastGeneration = gen;
                             }
                         }

@@ -4,25 +4,27 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static ImTools.ImMap;
 
-namespace PLCCommunication_Base.Modbus
+namespace PLCCommunication_Base.Mitsubishi3E
 {
-    public class ModbusDataPoint : ICommunicationDataPoint
+    /// <summary>
+    /// MC 链接地址数据
+    /// </summary>
+    public class Mc3EDataPoint : ICommunicationDataPoint
     {
-
         ValueChangedDelegate valueChanged_Light;
         ValueChangedDelegate valueChanged_Heavy;
 
         DeviceCommunication mPanel;
 
+        public DeviceCommunication Panel { set { mPanel = value; } }
         public string Name { get; set; } = string.Empty;
-
+        public MCDecodeData DecodeData { get; set; } = new MCDecodeData();
         public string Input { get; set; }
 
-        public DataType DataType {get;set;}
+        public DataType DataType { get; set; }
 
-        public int StrLength{ get; set; }
+        public int StrLength { get; set; }
 
         public ushort GetLength()
         {
@@ -47,16 +49,9 @@ namespace PLCCommunication_Base.Modbus
             }
         }
 
-        /// <summary>
-        /// 解码后的数据
-        /// </summary>
-        public ModbusDecodeData DecodeData { get; set; }
-
         public int LastGeneration { get; set; }
 
-        public DeviceCommunication Panel { set { mPanel = value; } }
-
-        public void OnValueChanged(ValueChangedDelegate value, E_CallBackWeight weight = E_CallBackWeight.Light) 
+        public void OnValueChanged(ValueChangedDelegate value, E_CallBackWeight weight = E_CallBackWeight.Light)
         {
             switch (weight)
             {
@@ -81,17 +76,6 @@ namespace PLCCommunication_Base.Modbus
             }
         }
 
-        public DeviceValue GetValue()
-        {
-            //串行读取
-            return ((ModbusTCP_Device)mPanel).DecodeValue(this);
-        }
-
-        public void SetValue(object val)
-        {
-            ((ModbusTCP_Device)mPanel).WriteAsync(this, val);
-        }
-
         public ValueChangedDelegate GetValChangeDel_Light()
         {
             return valueChanged_Light;
@@ -101,25 +85,41 @@ namespace PLCCommunication_Base.Modbus
         {
             return valueChanged_Heavy;
         }
+        public DeviceValue GetValue()
+        {
+            //串行读取
+            return ((Mitsubis3E_Device)mPanel).DecodeValue(this);
+        }
+
+        public void SetValue(object val)
+        {
+            ((Mitsubis3E_Device)mPanel).Write(this, val);
+        }
     }
+
 
     /// <summary>
     /// 解析后的数据
     /// </summary>
-    public class ModbusDecodeData
+    public class MCDecodeData
     {
-        public ModbusArea Area;
-        public string GroupStr;
+        public E_McDeviceCode Area;
         public ushort Address;
     }
+
     /// <summary>
-    /// 用于Modbus拥有的区域
+    /// MC 设备码（3E Binary）
     /// </summary>
-    public enum ModbusArea
+    public enum E_McDeviceCode : byte
     {
-        Coil,
-        DiscreteInput,
-        HoldingRegister,
-        InputRegister
+        // bit
+        M = 0x90,
+        X = 0x9C,
+        Y = 0x9D,
+        B = 0xA0,
+        // word
+        D = 0xA8,
+        W = 0xB4,
+        R = 0xAF,
     }
 }

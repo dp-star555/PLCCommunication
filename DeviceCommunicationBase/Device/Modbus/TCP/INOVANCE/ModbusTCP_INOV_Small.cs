@@ -1,4 +1,5 @@
 ﻿using CommunicationBase;
+using Prism.Ioc;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,7 +17,7 @@ namespace PLCCommunication_Base.Modbus.INOVANCE
     /// </summary>
     public class ModbusTCP_INOV_Small: ModbusTCP_Device
     {
-        public ModbusTCP_INOV_Small() 
+        public ModbusTCP_INOV_Small(IContainerProvider container) : base(container)
         {
             mCoils = new bool[65535];
             mHoldingRegisters = new ushort[45055];
