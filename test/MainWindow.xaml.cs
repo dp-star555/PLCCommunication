@@ -12,6 +12,8 @@ using Prism.Ioc;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace test
@@ -286,7 +288,7 @@ namespace test
             };
             mp1.OnValueChanged ((val) => 
             {
-                Console.WriteLine($"{mp1.Input} : {val}");
+                Console.WriteLine($"{DateTime.Now.ToString("mm-ss-fff")} : {mp1.Input} : {val}");
             });
             Mc3EDataPoint mp2 = new Mc3EDataPoint()
             {
@@ -296,8 +298,9 @@ namespace test
             };
             mp2.OnValueChanged ( (val) =>
             {
-                Console.WriteLine($"{mp2.Input} : {val}");
-            });
+                Thread.Sleep(1000);
+                Console.WriteLine($"{DateTime.Now.ToString("mm-ss-fff")} : 延迟后{mp2.Input} : {val}");
+            }, E_CallBackWeight.Heavy);
             Mc3EDataPoint mp3 = new Mc3EDataPoint()
             {
                 Name = "测试D900",
@@ -306,7 +309,7 @@ namespace test
             };
             mp3.OnValueChanged ((val) =>
             {
-                Console.WriteLine($"{mp3.Input} : {val}");
+                Console.WriteLine($"{DateTime.Now.ToString("mm-ss-fff")} : {mp3.Input} : {val}");
             });
             mitsubis3E_Device.AddDataPoint(mp1);
             mitsubis3E_Device.AddDataPoint(mp2);

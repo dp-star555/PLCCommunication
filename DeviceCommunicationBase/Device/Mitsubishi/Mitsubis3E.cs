@@ -581,10 +581,10 @@ namespace PLCCommunication_Base.Mitsubishi3E
 
         public DeviceValue DecodeValue(Mc3EDataPoint mp)
         {
-            if (!mChangedMge.IsChannelRunning)
-            {
-                throw new Exception("自动读取没有开启，无法支持内存解码操作");
-            }
+            //if (!mChangedMge.IsChannelRunning)
+            //{
+            //    throw new Exception("自动读取没有开启，无法支持内存解码操作");
+            //}
             switch (mp.DecodeData.Area)
             {
                 case E_McDeviceCode.M:
