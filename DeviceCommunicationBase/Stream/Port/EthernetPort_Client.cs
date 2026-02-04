@@ -1,4 +1,6 @@
-﻿using HPSocket;
+﻿using DeviceCommunicationBase.Stream.FrameSplitter;
+using DeviceCommunicationBase.Stream.FrameSplitter.Splitter;
+using HPSocket;
 using HPSocket.Adapter;
 using HPSocket.Base;
 using HPSocket.Sdk;
@@ -45,7 +47,7 @@ namespace DeviceCommunicationBase.Stream
         string mRemoteIp = "127.0.0.1";
         ushort mRemotePort = 502;
 
-        IFrameSplitter mFrameSplitter = DelimiterFrameSplitter.FromString("\r\n");  
+        IFrameSplitter mFrameSplitter = ModuleSplitterPresets.Delimited(new byte[] { 0x0d, 0x0a });  
 
         public event Action<ICommPort, ReadOnlyMemory<byte>> OnDataReceived;
         public event Action<ICommPort> OnDisconnect;

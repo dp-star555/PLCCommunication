@@ -11,30 +11,33 @@ namespace DeviceCommunicationBase.Stream
     /// </summary>
     public sealed class LengthModule : IFrameModule
     {
+        private readonly string mName;
+
         private readonly string mFromMark;
         private readonly string mToMark;
         private readonly bool mLittleEndian;
         private int mPatchPos;
         private int mLength;
 
-        public LengthModule(string fromMark, string toMark, int byteNum = 2, bool littleEndian = true)
+        public LengthModule(string fromMark, string toMark, int byteNum = 2, string name = "", bool littleEndian = true)
         {
             mFromMark = fromMark;
             mToMark = toMark;
             mLength = byteNum;
             mLittleEndian = littleEndian;
+            mName = name;
         }
 
         public int Length => mLength;
-
-        public void Emit(FrameBuildContext ctx)
+        public string Name => mName;
+        public void Encode_Emit(FrameWriteContext ctx)
         {
             mPatchPos = ctx.Reserve(Length);
         }
 
-        public void Fixup(FrameBuildContext ctx)
+        public void Encode_Fixup(FrameWriteContext ctx)
         {
-            var length = ctx.SliceLength(mFromMark, mToMark);
+            var length = ctx.Slice(mFromMark, mToMark).Length;
             byte[] bytes = new byte[Length];
             switch (Length)
             {

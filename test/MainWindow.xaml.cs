@@ -5,6 +5,8 @@
 using CommunicationBase;
 using DeviceCommunicationBase;
 using DeviceCommunicationBase.Stream;
+using DeviceCommunicationBase.Stream.FrameSplitter;
+using DeviceCommunicationBase.Stream.FrameSplitter.Splitter;
 using DryIoc;
 using PLCCommunication_Base.Mitsubishi3E;
 using PLCCommunication_Base.Modbus;
@@ -338,6 +340,28 @@ namespace test
                 );
             Console.WriteLine("时间: " + sw.ElapsedMilliseconds);
 
+        }
+
+        HPSocketPort_Client s = new HPSocketPort_Client("127.0.0.1",1000);
+
+        private void button2_Click(object sender, RoutedEventArgs e)
+        {
+            //ModuleSplitter ms = ModuleSplitterPresets.FixedSize( 4);
+            //ModuleSplitter ms = ModuleSplitterPresets.Delimited(new byte[] { 0x0d, 0x0a });
+            //ModuleSplitter ms = ModuleSplitterPresets.HeaderFixed(new byte[] { 0x0a, 0x0a },4);
+            //ModuleSplitter ms = ModuleSplitterPresets.HeaderFixedTail(new byte[] { 0x0a,0x0a},4, new byte[] { 0x0d, 0x0a });
+            //ModuleSplitter ms = ModuleSplitterPresets.HeaderDelimited(new byte[] { 0x0a, 0x0a },new byte[] { 0x0d, 0x0a });
+            ModuleSplitter ms = new ModuleSplitter()
+                .Add(new HeaderModule(new byte[] { 0x0a, 0x0a }))
+                .Add(new SizeModule(4))
+                .Add(new DeviceCommunicationBase.Stream.FrameSplitter.SplitModules.LengthModule());
+
+            ms.FrameCompleted += (bytes) =>
+            {
+                Console.WriteLine("hhhhh");
+            };
+            s.FrameSplitter = ms;
+            s.Connect();
         }
     }
 }

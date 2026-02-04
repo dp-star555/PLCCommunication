@@ -12,25 +12,29 @@ namespace DeviceCommunicationBase.Stream
     public sealed class VarBytesModule : IFrameModule
     {
         private readonly Func<byte[]> mGetBytes;
+        private readonly string mName;
 
-        public VarBytesModule(Func<byte[]> getBytes)
+
+        public VarBytesModule(Func<byte[]> getBytes, string name = "")
         {
             mGetBytes = getBytes;
+            mName = name;
         }
 
         public int Length => mGetBytes().Length;
+        public string Name => mName;
 
         public void Decode(FrameDecodeContext ctx)
         {
             throw new NotImplementedException();
         }
 
-        public void Emit(FrameBuildContext ctx)
+        public void Encode_Emit(FrameWriteContext ctx)
         {
-            ctx.WriteBytes(mGetBytes());
+            ctx.Write(mGetBytes());
         }
 
-        public void Fixup(FrameBuildContext ctx) { }
+        public void Encode_Fixup(FrameWriteContext ctx) { }
 
         public byte[] GetConstData()
         {

@@ -12,12 +12,20 @@ namespace DeviceCommunicationBase.Stream
     public sealed class ConstBytesModule : IFrameModule
     {
         private readonly byte[] mBytes;
-        public ConstBytesModule(byte[] bytes) => mBytes = bytes;
+        private readonly string mName;
+
+        public ConstBytesModule(byte[] bytes, string name = "") 
+        {
+            mBytes = bytes;
+            mName = name;
+        }
 
         public int Length => mBytes.Length;
 
-        public void Emit(FrameBuildContext ctx) => ctx.WriteBytes(mBytes);
-        public void Fixup(FrameBuildContext ctx) { }
+        public string Name => mName;
+
+        public void Encode_Emit(FrameWriteContext ctx) => ctx.Write(mBytes);
+        public void Encode_Fixup(FrameWriteContext ctx) { }
 
         public void Scan(FrameDecodeContext ctx)
         {

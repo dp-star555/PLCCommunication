@@ -25,14 +25,15 @@ namespace DeviceCommunicationBase.Stream
 
         public MarkType MarkType { get; }
         public int Length => 0;
+        public string Name => mName;
 
         public void Decode(FrameDecodeContext ctx)
         {
             throw new NotImplementedException();
         }
 
-        public void Emit(FrameBuildContext ctx) => ctx.Mark(mName);
-        public void Fixup(FrameBuildContext ctx) { }
+        public void Encode_Emit(FrameWriteContext ctx) => ctx.Mark(mName);
+        public void Encode_Fixup(FrameWriteContext ctx) { }
 
         public byte[] GetConstData()
         {

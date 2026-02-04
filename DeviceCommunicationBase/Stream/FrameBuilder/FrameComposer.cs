@@ -20,13 +20,13 @@ namespace DeviceCommunicationBase.Stream
         {
             var ctx = new FrameBuildContext();
 
-            // 第1遍：写入
-            foreach (var m in mModules)
-                m.Emit(ctx);
+            //// 第1遍：写入
+            //foreach (var m in mModules)
+            //    m.Encode_Emit(ctx);
 
-            // 第2遍：回填
-            foreach (var m in mModules)
-                m.Fixup(ctx);
+            //// 第2遍：回填
+            //foreach (var m in mModules)
+            //    m.Encode_Fixup(ctx);
 
             return ctx.ToArray();
         }

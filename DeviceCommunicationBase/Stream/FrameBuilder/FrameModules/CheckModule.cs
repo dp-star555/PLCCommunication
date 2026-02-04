@@ -25,12 +25,16 @@ namespace DeviceCommunicationBase.Stream
         private readonly string mToMark;
         private int mPatchPos;
         private int mLength;
+        private readonly string mName;
+
         private CheckType mCheckType;
 
-        public CheckModule(string fromMark, string toMark, CheckType checkType, int byteNum)
+        public CheckModule(string fromMark, string toMark, CheckType checkType, int byteNum, string name = "")
         {
             mFromMark = fromMark;
             mToMark = toMark;
+            mName = name;
+
             switch (checkType)
             {
                 case CheckType.CRC16:
@@ -48,19 +52,20 @@ namespace DeviceCommunicationBase.Stream
             }
         }
         public int Length => mLength;
+        public string Name => mName;
 
         public void Decode(FrameDecodeContext ctx)
         {
             throw new NotImplementedException();
         }
 
-        public void Emit(FrameBuildContext ctx)
+        public void Encode_Emit(FrameWriteContext ctx)
         {
             mPatchPos = ctx.Reserve(Length);
         }
-        public void Fixup(FrameBuildContext ctx)
+        public void Encode_Fixup(FrameWriteContext ctx)
         {
-            var (data, length) = ctx.Slice(mFromMark, mToMark);
+            var data = ctx.Slice(mFromMark, mToMark);
             ushort crc = 0;//校验的代码实现 Crc16.ComputeChecksum(span);
             byte[] bytes = new byte[2];
             bytes[0] = (byte)(crc & 0xFF);

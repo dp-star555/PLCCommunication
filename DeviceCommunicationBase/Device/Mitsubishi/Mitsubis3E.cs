@@ -1,6 +1,7 @@
 ﻿using CommunicationBase;
 using DeviceCommunicationBase;
 using DeviceCommunicationBase.Stream;
+using DeviceCommunicationBase.Stream.FrameSplitter;
 using HPSocket;
 using Prism.Ioc;
 using System;
@@ -708,7 +709,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
                 // --- 2. 长度自计算区域 ---
                 // MC协议规定：长度字段 = 从 MonitorTimer 开始到最后的所有字节数
                 // 定义：计算从 "DataStart" 到 "DataEnd" 的长度，填入2字节(小端字节序)
-                composer.Add(new LengthModule("DataStart", "DataEnd", 2, true));    //Length
+                composer.Add(new LengthModule("DataStart", "DataEnd", 2));    //Length
 
                 // --- 3. 数据体 (Command Body) ---
                 composer.Add(new MarkModule( MarkType.Length,"DataStart"))                           // <--- 长度计算起点
@@ -750,7 +751,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
                         .Add(new ConstBytesModule(new byte[] { StationNo }));
 
                 // --- Length ---
-                composer.Add(new LengthModule("DataStart", "DataEnd", 2, true));
+                composer.Add(new LengthModule("DataStart", "DataEnd", 2));
 
                 // --- Body ---
                 composer.Add(new MarkModule(MarkType.Length, "DataStart"))

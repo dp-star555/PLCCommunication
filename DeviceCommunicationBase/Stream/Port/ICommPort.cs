@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DeviceCommunicationBase.Stream.FrameSplitter;
+using System;
 using System.Threading.Tasks;
 
 namespace DeviceCommunicationBase.Stream

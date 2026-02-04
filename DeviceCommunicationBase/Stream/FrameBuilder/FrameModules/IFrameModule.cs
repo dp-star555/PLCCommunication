@@ -12,9 +12,10 @@ namespace DeviceCommunicationBase.Stream
     /// </summary>
     public interface IFrameModule
     {
+        string Name { get; }                    // 用于标记模组的名称
         int Length { get; }                     // 模组长度，-1 表示不定长
-        void Emit(FrameBuildContext ctx);       // 第一遍：顺序写（或占位 / Mark）
-        void Fixup(FrameBuildContext ctx);      // 第二遍：回填（Length/CRC 用）
+        void Encode_Emit(FrameWriteContext ctx);       // 第一遍：顺序写（或占位 / Mark）
+        void Encode_Fixup(FrameWriteContext ctx);      // 第二遍：回填（Length/CRC 用）
         void Scan(FrameDecodeContext ctx);      // 扫描分割数据
         void Decode(FrameDecodeContext ctx);    // 解析数据
 

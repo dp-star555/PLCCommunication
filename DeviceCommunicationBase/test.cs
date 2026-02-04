@@ -112,6 +112,36 @@ namespace DeviceCommunicationBase
             return ToUInt16(value, 0, isLE);
         }
 
+        public static uint ToUInt(this ReadOnlySpan<byte> value, int startIndex, int byteCount, bool isLE = true)
+        {
+            if (byteCount < 1 || byteCount > 4)
+                throw new ArgumentOutOfRangeException(nameof(byteCount));
+
+            if (startIndex < 0 || startIndex + byteCount > value.Length)
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
+
+            uint result = 0;
+
+            if (isLE)
+            {
+                for (int i = 0; i < byteCount; i++)
+                    result |= (uint)value[startIndex + i] << (8 * i);
+            }
+            else
+            {
+                for (int i = 0; i < byteCount; i++)
+                    result = (result << 8) | value[startIndex + i];
+            }
+
+            return result;
+        }
+        public static uint ToUInt(this ReadOnlySpan<byte> value,  bool isLE = true)
+        {
+            return value.ToUInt(0, value.Length,isLE);
+
+        }
+
+
         /// <summary>
         /// 将Byte数组转为Bool数组
         /// 逻辑：Hex显示的 1为True，0为False
