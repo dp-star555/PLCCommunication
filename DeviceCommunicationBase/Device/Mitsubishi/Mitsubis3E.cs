@@ -34,20 +34,8 @@ namespace PLCCommunication_Base.Mitsubishi3E
         public Mitsubis3E_Device(IContainerProvider container):base(container) 
         {
             containerProvider=  container ;
-            // 当拆出一帧完整包时：交付给等待方
-            mSplitter.FrameCompleted += frame =>
-            {
-                byte[] data = frame.ToArray();
-                if (mCurrentTcs == null)
-                    return;                 // 没人在等：迟到包/残留包 -> 丢弃
-                                            // B. 优先检查是否是异步请求
-                if (mCurrentTcs != null && !mCurrentTcs.Task.IsCompleted)
-                {
-                    // 异步模式：设置 Task 结果，让 await 继续运行
-                    mCurrentTcs.TrySetResult(data);
-                }
+            
 
-            };
 
         }
 
@@ -68,7 +56,7 @@ namespace PLCCommunication_Base.Mitsubishi3E
         /// <summary>
         /// 用于端口的自动解包器
         /// </summary>
-        private readonly Mc3EBinaryFrameSplitter mSplitter = new Mc3EBinaryFrameSplitter( maxFrameLength: 4096);
+        //private readonly Mc3EBinaryFrameSplitter mSplitter = new Mc3EBinaryFrameSplitter( maxFrameLength: 4096);
 
         /// <summary>
         /// 用于记录所属的所有数据点
@@ -139,12 +127,36 @@ namespace PLCCommunication_Base.Mitsubishi3E
             string name="1";
             mClient= containerProvider.Resolve<CommPortManager>().GetPort(name);
 
-            mClient.FrameSplitter = mSplitter;
+            //mClient.FrameSplitter = mSplitter;
             mClient.OnDisconnect += (sender) =>
             {
                 // 如果连接断开了，通知等待的任务抛出异常
                 mCurrentTcs?.TrySetException(new Exception("Socket disconnected unexpectedly."));
             };
+
+            ModuleSplitter moduleSplitter = new ModuleSplitter()
+                .Add(new HeaderModule(new byte[] { 0xD0, 0x00 }))
+                .Add(new SizeModule(5))
+                .Add(new DeviceCommunicationBase.Stream.FrameSplitter.SplitModules.LengthModule());
+
+            // 当拆出一帧完整包时：交付给等待方
+            moduleSplitter.FrameCompleted += frame =>
+            {
+                byte[] data = frame.ToArray();
+                if (mCurrentTcs == null)
+                    return;                 // 没人在等：迟到包/残留包 -> 丢弃
+                                            // B. 优先检查是否是异步请求
+                if (mCurrentTcs != null && !mCurrentTcs.Task.IsCompleted)
+                {
+                    // 异步模式：设置 Task 结果，让 await 继续运行
+                    mCurrentTcs.TrySetResult(data);
+                }
+
+            };
+
+            mClient.FrameSplitter = moduleSplitter;
+
+
         }
 
         public override ICommunicationDataPoint this[string name]
