@@ -15,7 +15,7 @@ namespace DeviceCommunicationBase.Stream.FrameSplitter.SplitModules
         private readonly byte[] mDelimiter;
         public DelimiterModule(byte[] delimiter) => mDelimiter = delimiter;
 
-        public E_SplitResult Apply(FrameSplitContext ctx)
+        public E_SplitResult Apply(ref FrameSplitContext ctx)
         {
             // 结束符必须存在
             if (mDelimiter == null || mDelimiter.Length == 0) 

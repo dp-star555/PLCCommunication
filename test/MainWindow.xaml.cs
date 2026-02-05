@@ -343,7 +343,7 @@ namespace test
         }
 
         HPSocketPort_Client s = new HPSocketPort_Client("127.0.0.1",1000);
-
+        int number = 0;
         private void button2_Click(object sender, RoutedEventArgs e)
         {
             //ModuleSplitter ms = ModuleSplitterPresets.FixedSize( 4);
@@ -358,7 +358,7 @@ namespace test
 
             ms.FrameCompleted += (bytes) =>
             {
-                Console.WriteLine("hhhhh");
+                Console.WriteLine($"{number += 1}");
             };
             s.FrameSplitter = ms;
             s.Connect();

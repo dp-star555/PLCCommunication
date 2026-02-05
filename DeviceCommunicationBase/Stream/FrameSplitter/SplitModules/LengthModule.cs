@@ -17,7 +17,7 @@ namespace DeviceCommunicationBase.Stream.FrameSplitter.SplitModules
             mLittleEndian = littleEndian;
         }
 
-        public E_SplitResult Apply(FrameSplitContext ctx)
+        public E_SplitResult Apply(ref FrameSplitContext ctx)
         {
             ReadOnlySpan<byte> bytes = ctx.SliceFromStart( ctx.FixedLengthSoFar, mLength);
             int number = Convert.ToInt32( bytes.ToUInt(mLittleEndian));

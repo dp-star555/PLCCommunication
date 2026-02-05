@@ -14,7 +14,7 @@ namespace DeviceCommunicationBase.Stream.FrameSplitter
         private readonly int mSize;
         public SizeModule(int size = -1) => mSize = size;
         public bool IsVariable => mSize <= 0;
-        public E_SplitResult Apply(FrameSplitContext ctx)
+        public E_SplitResult Apply(ref FrameSplitContext ctx)
         {
             if (mSize > 0)
             {

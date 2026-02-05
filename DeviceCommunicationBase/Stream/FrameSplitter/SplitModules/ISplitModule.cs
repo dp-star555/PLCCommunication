@@ -8,7 +8,7 @@ namespace DeviceCommunicationBase.Stream.FrameSplitter
 {
     public interface ISplitModule
     {
-        E_SplitResult Apply(FrameSplitContext ctx);
+        E_SplitResult Apply(ref FrameSplitContext ctx);
     }
 
     public enum E_SplitResult 

@@ -18,7 +18,7 @@ namespace DeviceCommunicationBase.Stream.FrameSplitter
             mHeader = header;
         }
 
-        public E_SplitResult Apply(FrameSplitContext ctx)
+        public E_SplitResult Apply(ref FrameSplitContext ctx)
         {
             int idx = ctx.IndexOf(mHeader, ctx.StartIndex);
             if (idx < 0) return E_SplitResult.NeedMore;

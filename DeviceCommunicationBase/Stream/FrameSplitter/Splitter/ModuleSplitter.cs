@@ -10,7 +10,7 @@ namespace DeviceCommunicationBase.Stream.FrameSplitter
 {
     public class ModuleSplitter : IFrameSplitter
     {
-        private readonly List<byte> mBuffer = new List<byte>();
+        private readonly SlidingBuffer mBuffer = new SlidingBuffer();
         private readonly List<ISplitModule> mModules = new List<ISplitModule>();
 
         private bool mIsValidated = false;
@@ -33,7 +33,7 @@ namespace DeviceCommunicationBase.Stream.FrameSplitter
             }
 
             // 1) 追加数据到缓冲
-            for (int i = 0; i < data.Length; i++) mBuffer.Add(data[i]);
+            mBuffer.Append(data);
 
             // 循环拆帧
             while (true)
@@ -41,12 +41,12 @@ namespace DeviceCommunicationBase.Stream.FrameSplitter
                 if (mBuffer.Count == 0) return;
 
                 // 创建 Context
-                var ctx = new FrameSplitContext(mBuffer.ToArray());
+                var ctx = new FrameSplitContext(mBuffer.Span);
 
                 E_SplitResult result = E_SplitResult.Ok;
                 foreach (var m in mModules)
                 {
-                    result = m.Apply(ctx);
+                    result = m.Apply(ref ctx);
                     if (result == E_SplitResult.BadAlign)
                     {
                         break; 
@@ -57,7 +57,7 @@ namespace DeviceCommunicationBase.Stream.FrameSplitter
 
                 if (result == E_SplitResult.BadAlign)
                 {
-                    mBuffer.RemoveRange(0, ctx.StartIndex + 1);
+                    mBuffer.Consume(ctx.StartIndex + 1);
                     continue;
                 }
                 if (result == E_SplitResult.NeedMore)
@@ -74,9 +74,9 @@ namespace DeviceCommunicationBase.Stream.FrameSplitter
 
                 //切出完整帧
                 int frameLen = ctx.FrameLength;
-                var frame = mBuffer.GetRange(ctx.StartIndex, frameLen).ToArray();
+                var frame = mBuffer.CopyFrame(ctx.StartIndex, frameLen);
 
-                mBuffer.RemoveRange(0, ctx.StartIndex + frameLen);
+                mBuffer.Consume(ctx.StartIndex + frameLen);
 
                 //触发回调
                 FrameCompleted?.Invoke(frame);
